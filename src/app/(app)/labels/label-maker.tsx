@@ -4,7 +4,7 @@ import QRCode from "qrcode";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, Card, CardHeader, Input, Select } from "@/components/ui";
 import { LABEL_TEMPLATES, type LabelTemplate } from "@/lib/label-templates";
-import { qrPath } from "@/lib/qr";
+import { qrPath, skuQrPath } from "@/lib/qr";
 import { type LabelSource, searchLabelSources } from "./actions";
 
 type Entry = {
@@ -34,7 +34,8 @@ function entriesFor(source: LabelSource, variantIds?: string[]): Entry[] {
   return [
     {
       key: `${source.kind}:${source.id}`,
-      path: qrPath(source.kind, source.id),
+      // Items with a SKU get the QR code made from their SKU.
+      path: source.kind === "item" && source.sku ? skuQrPath(source.sku) : qrPath(source.kind, source.id),
       title: source.name,
       subtitle: source.kind === "location" ? "Location" : source.kind === "kit" ? "Kit" : null,
       sku: source.sku,

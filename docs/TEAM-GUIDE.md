@@ -30,13 +30,16 @@ What you can do depends on your role:
 ## Add an item
 
 1. Tap **Inventory**, then **Add item** (or **Add item** on the Home screen).
-2. Fill in the **name** and **category**. SKU, description and notes are optional.
-3. Clothing? Tick **This item comes in sizes**. You'll get a row for each size.
-4. Add photos: **📷 Take photo** uses your camera, **Choose photos** picks from your
+2. Fill in the **name** and **category**. Description and notes are optional.
+3. **SKU and QR code:** type the item's SKU, or tap **Generate** to make one from the
+   category and name (e.g. `APP-BLAC-HOOD`). A QR code made from the SKU appears right
+   away; tap **Download QR (PNG)** to save it, or print it later from **Print labels**.
+4. Clothing? Tick **This item comes in sizes**. You'll get a row for each size.
+5. Add photos: **📷 Take photo** uses your camera, **Choose photos** picks from your
    gallery. You can add several. The first photo is the cover; drag to reorder.
-5. Optional: set a **low stock minimum** so you're warned when it runs low, and tick
+6. Optional: set a **low stock minimum** so you're warned when it runs low, and tick
    **Can be checked out** for gear people borrow.
-6. Tap **Create item**, then enter how many you have at each location.
+7. Tap **Create item**, then enter how many you have at each location.
 
 ## Change a quantity
 
@@ -55,7 +58,9 @@ coming from and going to, and how many.
 
 ## Scan a QR code
 
-Every item and location has a QR code (admins print them from **Print labels**).
+Every item and location has a QR code (print them from **Print labels**). Items with a
+SKU use a QR code made from the SKU, and the scanner also reads QR codes that contain just
+a SKU (for example from a supplier's label).
 
 1. Tap the round **Scan** button at the bottom of the screen (or top, on a computer).
 2. Allow the camera the first time.

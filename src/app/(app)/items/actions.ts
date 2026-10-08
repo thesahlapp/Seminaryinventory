@@ -344,3 +344,42 @@ export async function saveSizeMinimums(_: ActionState, formData: FormData): Prom
   refresh();
   return { success: "Minimums saved." };
 }
+
+/**
+ * Suggests an unused SKU from the item's category and name, e.g. Apparel +
+ * "Black Hoodie" → APP-BLAC-HOOD (then APP-BLAC-HOOD-2 if that's taken).
+ */
+export async function suggestSku(name: string, categoryId: string | null): Promise<{ sku?: string; error?: string }> {
+  const auth = await authorize("edit");
+  if ("error" in auth) return { error: auth.error };
+  const { supabase } = auth;
+
+  const words = (text: string) =>
+    text
+      .normalize("NFKD")
+      .replace(/[^A-Za-z0-9\s]/g, " ")
+      .toUpperCase()
+      .split(/\s+/)
+      .filter(Boolean);
+  const nameParts = words(name).slice(0, 3).map((w) => w.slice(0, 4));
+  if (!nameParts.length) return { error: "Type a name first." };
+
+  let prefix: string[] = [];
+  if (categoryId) {
+    const { data: category } = await supabase.from("categories").select("name").eq("id", categoryId).maybeSingle();
+    const first = category ? words(category.name)[0] : undefined;
+    if (first) prefix = [first.slice(0, 3)];
+  }
+  const base = [...prefix, ...nameParts].join("-").slice(0, 40);
+
+  // Every SKU starting with the base, from items and sizes (SKUs are unique ignoring case).
+  const pattern = `${base.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+  const [items, variants] = await Promise.all([
+    supabase.from("items").select("sku").ilike("sku", pattern),
+    supabase.from("item_variants").select("sku").ilike("sku", pattern),
+  ]);
+  const taken = new Set([...(items.data ?? []), ...(variants.data ?? [])].map((r) => r.sku?.toUpperCase()));
+  if (!taken.has(base)) return { sku: base };
+  for (let n = 2; n < 1000; n++) if (!taken.has(`${base}-${n}`)) return { sku: `${base}-${n}` };
+  return { error: "Couldn't find a free SKU. Type one instead." };
+}

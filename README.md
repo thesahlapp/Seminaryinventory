@@ -216,6 +216,7 @@ minutes and includes restore steps.
 | **Checked out** | Check gear out (who, due date, project) and back in (good, damaged or missing). Overdue items are highlighted. Only items marked *Can be checked out* appear. |
 | **Kits** | Named sets of items (e.g. "Camera kit"). Shows whether everything is available and what's short; check a whole kit out at once. |
 | **Print labels** | QR labels for items, sizes, locations and kits, for Avery 5160, 5163, 5164, L7160 and L7163 sheets |
+| **SKU QR codes** | On the Add/Edit item form, **Generate** suggests an unused SKU from the category and name, and a QR code made from the SKU appears as you type (with a PNG download). It encodes a link like `/q/s/HOOD-BLK`, so phone cameras open the item too. Item pages and labels use it for items with a SKU, and the scanner also accepts QR codes holding just a SKU. |
 | **Stock counts** | Count a location (several people at once, by scanning or tapping), compare with what's expected, and apply the corrections (admins) |
 | **Purchase orders** (admins) | Suppliers and orders. Receiving an order adds the stock and logs it. **Create PO** from the low stock list. |
 | **Reports** (admins) | Usage over time, fastest and slowest movers, losses, value over time and check-out stats, each with a CSV download |

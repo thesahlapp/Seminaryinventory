@@ -277,6 +277,7 @@ export default async function ItemPage({ params, searchParams }: PageProps<"/ite
             kind="item"
             id={item.id}
             title={item.name}
+            sku={item.sku}
             variants={item.has_sizes ? activeVariants.map((v) => ({ id: v.id, label: v.sizes?.label ?? "" })) : []}
           />
         </div>

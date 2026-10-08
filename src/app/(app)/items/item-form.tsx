@@ -4,12 +4,13 @@ import { useRouter } from "next/navigation";
 import { startTransition, useActionState, useEffect, useRef, useState } from "react";
 import { SubmitButton } from "@/components/action-form";
 import { PhotoButtons } from "@/components/photos/photo-buttons";
+import { SkuQrField } from "@/components/qr/sku-qr-field";
 import { Alert, Card, Field, Input, LinkButton, Select, Textarea } from "@/components/ui";
 import { initialActionState } from "@/lib/action-state";
 import { type CategoryField, fieldInputValue } from "@/lib/custom-fields";
 import type { Json } from "@/lib/supabase/database.types";
 import { uploadItemPhotos } from "@/lib/upload-photos";
-import { createItem, updateItem } from "./actions";
+import { createItem, suggestSku, updateItem } from "./actions";
 
 type Category = { id: string; name: string; default_has_sizes: boolean };
 type Size = { id: string; label: string; is_standard: boolean };
@@ -51,6 +52,7 @@ export function ItemForm({
   const router = useRouter();
   const [state, dispatch, pending] = useActionState(isEdit ? updateItem : createItem, initialActionState);
   const [categoryId, setCategoryId] = useState(item?.category_id ?? "");
+  const [name, setName] = useState(item?.name ?? "");
   const [hasSizes, setHasSizes] = useState(item?.has_sizes ?? false);
   const [sizesTouched, setSizesTouched] = useState(isEdit);
   const [photos, setPhotos] = useState<{ file: File; preview: string }[]>([]);
@@ -115,10 +117,10 @@ export function ItemForm({
 
         <div className="grid gap-5 sm:grid-cols-2">
           <Field label="Name" htmlFor="name">
-            <Input id="name" name="name" required defaultValue={item?.name} placeholder="e.g. Black Hoodie" />
+            <Input id="name" name="name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Black Hoodie" />
           </Field>
-          <Field label="SKU" htmlFor="sku" hint="Optional. Must be unique.">
-            <Input id="sku" name="sku" defaultValue={item?.sku ?? ""} placeholder="e.g. HOOD-BLK" />
+          <Field label="SKU" htmlFor="sku">
+            <SkuQrField defaultValue={item?.sku ?? ""} changed={isEdit} suggest={() => suggestSku(name, categoryId || null)} />
           </Field>
           <Field label="Category" htmlFor="category_id">
             <Select

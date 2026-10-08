@@ -6,6 +6,8 @@ import type { ActionState } from "@/lib/action-state";
 import { authorize, getCurrentProfile } from "@/lib/auth";
 import { friendlyError } from "@/lib/errors";
 import { formText, sanitizeSearch } from "@/lib/format";
+import { skuFromQrPath } from "@/lib/qr";
+import { findBySku } from "@/lib/sku";
 import { createClient } from "@/lib/supabase/server";
 
 export async function startAudit(_: ActionState, formData: FormData): Promise<ActionState> {
@@ -55,7 +57,16 @@ export type CountOption = { variantId: string; itemName: string; sizeLabel: stri
 export async function findCountOptions({ path, query }: { path?: string; query?: string }): Promise<CountOption[]> {
   await getCurrentProfile();
   const supabase = await createClient();
+  // A scanned label: an item, one size, or a SKU code.
+  let target: { kind: "item" | "variant"; id: string } | null = null;
   const match = path?.match(/^\/q\/([iv])\/([0-9a-f-]{36})$/i);
+  const sku = path ? skuFromQrPath(path) : null;
+  if (match) target = { kind: match[1] === "v" ? "variant" : "item", id: match[2] };
+  else if (sku) {
+    const found = await findBySku(supabase, sku);
+    if (!found) return [];
+    target = found.variantId ? { kind: "variant", id: found.variantId } : { kind: "item", id: found.itemId };
+  }
 
   let request = supabase
     .from("item_variants")
@@ -63,8 +74,8 @@ export async function findCountOptions({ path, query }: { path?: string; query?:
     .is("archived_at", null)
     .is("items.archived_at", null)
     .limit(40);
-  if (match?.[1] === "v") request = request.eq("id", match[2]);
-  else if (match?.[1] === "i") request = request.eq("item_id", match[2]);
+  if (target?.kind === "variant") request = request.eq("id", target.id);
+  else if (target?.kind === "item") request = request.eq("item_id", target.id);
   else if (query && sanitizeSearch(query)) request = request.ilike("items.name", `%${sanitizeSearch(query)}%`);
   else return [];
 
