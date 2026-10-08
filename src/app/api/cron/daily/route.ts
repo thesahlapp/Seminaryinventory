@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
   }
   const admin = createAdminClient();
   if (!admin) return NextResponse.json({ error: "SUPABASE_SECRET_KEY is not set" }, { status: 500 });
-  if (!emailConfigured()) return NextResponse.json({ skipped: "RESEND_API_KEY / EMAIL_FROM not set" });
+  if (!emailConfigured()) return NextResponse.json({ skipped: "Email isn't set up (SMTP_USER/SMTP_PASSWORD or RESEND_API_KEY/EMAIL_FROM)" });
 
   const site = siteUrl();
   const result = { lowStockEmails: 0, overdueBorrowerEmails: 0, overdueAdminEmails: 0 };

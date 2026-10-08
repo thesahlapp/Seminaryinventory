@@ -143,7 +143,7 @@ bucket called `item-photos`.
    - **Send invitation:** you'll get an email with a link to set your password.
 
 > Supabase's built-in email sender only sends a few emails per hour and is meant for
-> testing. Before inviting the whole team, set up your own SMTP server (e.g. Resend,
+> testing. Before inviting the whole team, set up your own SMTP server (e.g. the Gmail account from step 8, Resend,
 > Postmark or Google Workspace) under **Project Settings → Authentication → SMTP Settings**.
 
 ### 7. Run the app
@@ -170,28 +170,49 @@ Admins do this on the **Team** page:
 
 ### 8. Emails: low stock, overdue and @mentions (optional)
 
-The app sends three kinds of email through [Resend](https://resend.com) (free for up to
-3,000 emails a month):
+The app sends three kinds of email:
 
 - a **daily low stock summary** to admins,
 - **overdue check-out reminders** to the borrower (if they're on the team) and to admins,
 - an email when someone **@mentions** you in a comment.
 
-Each person can turn these on or off under **My settings**. Without Resend set up,
+Each person can turn these on or off under **My settings**. Without email set up,
 everything else works and these emails are simply skipped.
 
-1. Sign up at <https://resend.com>. Under **Domains**, add your domain (e.g.
-   `qalamseminary.org`) and add the DNS records it shows you at your domain provider.
-   Wait until it says **Verified**.
-2. Under **API Keys**, create a key with *Sending access*.
-3. Add these environment variables (`.env.local`, and in Vercel):
-   - `RESEND_API_KEY`: the key from step 2 (in Vercel, type **Secret**)
-   - `EMAIL_FROM`: e.g. `Qalam Inventory <inventory@qalamseminary.org>`, on the verified domain
-   - `CRON_SECRET`: any long random string (in Vercel, type **Secret**). It stops anyone
-     else triggering the daily job.
+**Option A: a free Gmail account (no domain needed)**
+
+1. Create a Gmail account for the app, e.g. `qalam.inventory@gmail.com`.
+2. Turn on 2-step verification: <https://myaccount.google.com/security> →
+   **2-Step Verification**.
+3. Create an app password: <https://myaccount.google.com/apppasswords>. Name it
+   `Inventory` and click **Create**. Copy the 16-letter password it shows (you only see it
+   once).
+4. In Vercel, add these environment variables, then **Redeploy**:
+   - `SMTP_USER`: the Gmail address
+   - `SMTP_PASSWORD`: the app password (type **Secret**; spaces don't matter)
+   - `CRON_SECRET`: any long random string (type **Secret**). It stops anyone else
+     triggering the daily job.
    - `SUPABASE_SECRET_KEY` must also be set (see above): the daily job uses it.
 
-The daily job runs at 13:00 UTC (8 AM Dallas in summer, 7 AM in winter). It's set in
+Emails come from "Qalam Inventory" at that Gmail address. Gmail allows about 500
+emails a day, far more than the app sends. The first few may land in spam: mark them
+**Not spam** and they'll arrive normally after that.
+
+**Use the same Gmail for invites and password resets.** Supabase's built-in sender only
+sends a few emails an hour. In Supabase go to **Project Settings → Authentication → SMTP
+Settings**, turn on **Enable custom SMTP** and enter: host `smtp.gmail.com`, port `465`,
+username and sender email = the Gmail address, password = the app password, sender name
+`Qalam Inventory`. Save.
+
+**Option B: Resend (if you have a domain)**
+
+Sign up at <https://resend.com> (free for 3,000 emails a month), verify your domain under
+**Domains**, create an API key, then set `RESEND_API_KEY` (type **Secret**) and
+`EMAIL_FROM` (e.g. `Qalam Inventory <inventory@qalamseminary.org>`) instead of the
+`SMTP_` variables, plus `CRON_SECRET` as above. Other email providers' SMTP settings work
+too: set `SMTP_HOST` and `SMTP_PORT` as well.
+
+**The daily job** runs at 13:00 UTC (8 AM Dallas in summer, 7 AM in winter). It's set in
 [`vercel.json`](vercel.json), and Vercel runs it automatically after the next deploy; you can
 see it under **Settings → Cron Jobs** in Vercel. Reminders for a check-out are sent at most
 once a day.
@@ -261,7 +282,7 @@ any browser or phone.
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
    - `SUPABASE_SECRET_KEY` (type **Secret**; for inviting people and the daily emails)
-   - `RESEND_API_KEY`, `EMAIL_FROM` and `CRON_SECRET` (optional, see step 8)
+   - `SMTP_USER`, `SMTP_PASSWORD` and `CRON_SECRET` for emails (optional, see step 8)
 3. Click **Deploy**. You'll get an address like `https://seminary-inventory.vercel.app`.
 4. In Supabase go to **Authentication → URL Configuration**: set **Site URL** to that
    address and add `https://seminary-inventory.vercel.app/**` to **Redirect URLs**.

@@ -1,22 +1,67 @@
 import "server-only";
+import nodemailer, { type Transporter } from "nodemailer";
 
 /**
- * Sends email through Resend (https://resend.com). Needs two settings:
- *   RESEND_API_KEY  - from the Resend dashboard
- *   EMAIL_FROM      - a sender on a domain verified in Resend,
- *                     e.g. "Qalam Inventory <inventory@qalamseminary.org>"
- * Without them, emails are skipped (and logged), so the app still works.
+ * Sends email in one of two ways (whichever is set up):
+ *
+ * Gmail (or any SMTP server), free, no domain needed:
+ *   SMTP_USER      - the Gmail address, e.g. qalam.inventory@gmail.com
+ *   SMTP_PASSWORD  - a Gmail "app password" (not the normal password)
+ *   SMTP_HOST / SMTP_PORT - optional, default smtp.gmail.com / 465
+ *
+ * Resend (https://resend.com), needs a domain verified in Resend:
+ *   RESEND_API_KEY and EMAIL_FROM, e.g. "Qalam Inventory <inventory@qalamseminary.org>"
+ *
+ * EMAIL_FROM is optional for Gmail. Without either set, emails are skipped
+ * (and logged), so the app still works.
  */
+type Transport = "resend" | "smtp";
+
+function transport(): Transport | null {
+  if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) return "resend";
+  if (process.env.SMTP_USER && process.env.SMTP_PASSWORD) return "smtp";
+  return null;
+}
+
 export function emailConfigured() {
-  return Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
+  return transport() !== null;
+}
+
+function fromAddress() {
+  return process.env.EMAIL_FROM || `"Qalam Inventory" <${process.env.SMTP_USER}>`;
+}
+
+let smtp: Transporter | null = null;
+function smtpTransporter() {
+  if (!smtp) {
+    const port = Number(process.env.SMTP_PORT || 465);
+    smtp = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || "smtp.gmail.com",
+      port,
+      secure: port === 465,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD?.replace(/\s+/g, "") },
+    });
+  }
+  return smtp;
 }
 
 export async function sendEmail({ to, subject, html, text }: { to: string | string[]; subject: string; html: string; text: string }) {
   const recipients = (Array.isArray(to) ? to : [to]).filter(Boolean);
   if (!recipients.length) return { skipped: true as const };
-  if (!emailConfigured()) {
-    console.info(`[email skipped: RESEND_API_KEY/EMAIL_FROM not set] ${subject} -> ${recipients.join(", ")}`);
+  const via = transport();
+  if (!via) {
+    console.info(`[email skipped: no email settings (SMTP_USER/SMTP_PASSWORD or RESEND_API_KEY/EMAIL_FROM)] ${subject} -> ${recipients.join(", ")}`);
     return { skipped: true as const };
+  }
+
+  if (via === "smtp") {
+    try {
+      await smtpTransporter().sendMail({ from: fromAddress(), to: recipients, subject, html, text });
+      return { sent: true as const };
+    } catch (error) {
+      console.error(`[email failed] ${subject}:`, error instanceof Error ? error.message : error);
+      return { error: "Email failed" };
+    }
   }
 
   // RESEND_API_URL is only for testing against a local stand-in.
