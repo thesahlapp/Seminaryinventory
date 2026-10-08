@@ -144,7 +144,7 @@ bucket called `item-photos`.
 
 > Supabase's built-in email sender only sends a few emails per hour and is meant for
 > testing. Before inviting the whole team, set up your own SMTP server (e.g. the Gmail account from step 8, Resend,
-> Postmark or Google Workspace) under **Project Settings → Authentication → SMTP Settings**.
+> Postmark or Google Workspace) under **Authentication → Emails → SMTP Settings**.
 
 ### 7. Run the app
 
@@ -199,8 +199,8 @@ emails a day, far more than the app sends. The first few may land in spam: mark 
 **Not spam** and they'll arrive normally after that.
 
 **Use the same Gmail for invites and password resets.** Supabase's built-in sender only
-sends a few emails an hour. In Supabase go to **Project Settings → Authentication → SMTP
-Settings**, turn on **Enable custom SMTP** and enter: host `smtp.gmail.com`, port `465`,
+sends a few emails an hour. In Supabase go to **Authentication → Emails → SMTP Settings**
+(tab at the top), turn on **Enable custom SMTP** and enter: host `smtp.gmail.com`, port `465`,
 username and sender email = the Gmail address, password = the app password, sender name
 `Qalam Inventory`. Save.
 
