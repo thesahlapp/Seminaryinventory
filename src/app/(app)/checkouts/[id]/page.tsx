@@ -73,10 +73,16 @@ export default async function CheckoutPage({ params }: PageProps<"/checkouts/[id
         }
       />
 
+      {checkout.closed_at && (
+        <p role="status" className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-800">
+          Everything is checked in. This check-out was closed {formatDateTime(checkout.closed_at)}.
+        </p>
+      )}
+
       {editor && open.length > 0 && (
         <Card>
           <CardHeader title="Check in" />
-          <ActionForm action={checkIn} className="space-y-4 p-4">
+          <ActionForm action={checkIn} resetOnSuccess className="space-y-4 p-4">
             <input type="hidden" name="checkout_id" value={checkout.id} />
             <p className="text-sm text-brand-500">
               Enter what came back. Good and damaged items go back into stock; missing items are recorded as lost.

@@ -48,6 +48,39 @@ export default async function AccountPage() {
       </Card>
 
       <Card>
+        <CardHeader title="Put the app on your phone" />
+        <div className="grid gap-5 p-5 text-sm text-brand-700 sm:grid-cols-2">
+          <div>
+            <p className="font-semibold text-brand-800">iPhone or iPad</p>
+            <ol className="mt-1 list-decimal space-y-1 pl-5">
+              <li>Open this site in <strong>Safari</strong>.</li>
+              <li>
+                Tap <strong>Share</strong> (the square with an arrow), then <strong>Add to Home Screen</strong>.
+              </li>
+              <li>
+                Tap <strong>Add</strong>.
+              </li>
+            </ol>
+          </div>
+          <div>
+            <p className="font-semibold text-brand-800">Android</p>
+            <ol className="mt-1 list-decimal space-y-1 pl-5">
+              <li>Open this site in <strong>Chrome</strong>.</li>
+              <li>
+                Tap <strong>⋮</strong> (top right), then <strong>Install app</strong> or <strong>Add to Home screen</strong>.
+              </li>
+              <li>
+                Tap <strong>Install</strong>.
+              </li>
+            </ol>
+          </div>
+          <p className="text-brand-500 sm:col-span-2">
+            It opens full screen like a normal app, and you stay signed in. You need a connection to see or change stock.
+          </p>
+        </div>
+      </Card>
+
+      <Card>
         <CardHeader title="Change password" />
         <ActionForm action={changePassword} resetOnSuccess className="grid gap-4 p-5 sm:grid-cols-2">
           <Field label="New password" htmlFor="password">

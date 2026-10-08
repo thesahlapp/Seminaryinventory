@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useMemo, useRef, useState } from "react";
+import { formatMoneyCompact } from "@/lib/money";
 
 export type LineSeries = { name: string; color: string; values: number[] };
 
@@ -11,7 +12,7 @@ export type LineSeries = { name: string; color: string; values: number[] };
 export function LineChart({
   labels,
   series,
-  format = (n) => n.toLocaleString(),
+  valueFormat = "number",
   height = 220,
   area = false,
   ariaLabel,
@@ -19,12 +20,14 @@ export function LineChart({
   /** One label per x position (e.g. "Oct 3"). */
   labels: string[];
   series: LineSeries[];
-  format?: (n: number) => string;
+  /** How values are shown (a name, since functions can't be passed from server components). */
+  valueFormat?: "number" | "money";
   height?: number;
   /** Light wash under a single series. */
   area?: boolean;
   ariaLabel: string;
 }) {
+  const format = (n: number) => (valueFormat === "money" ? formatMoneyCompact(n) : n.toLocaleString());
   const [hover, setHover] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const gradientId = useId();

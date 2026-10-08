@@ -44,7 +44,7 @@ export function emailLayout(title: string, bodyHtml: string, footer = "You can c
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fdfbf6;border:1px solid #e9e0c8;border-radius:12px;overflow:hidden">
 <tr><td style="background:#284734;color:#f5f0e1;padding:14px 20px;font-weight:bold;letter-spacing:2px;font-size:13px">QALAM SEMINARY · INVENTORY</td></tr>
 <tr><td style="padding:20px"><h1 style="margin:0 0 12px;font-size:18px;color:#284734">${escapeHtml(title)}</h1>${bodyHtml}</td></tr>
-<tr><td style="padding:12px 20px;border-top:1px solid #e9e0c8;font-size:12px;color:#557a60">${escapeHtml(footer)}</td></tr>
+<tr><td style="padding:12px 20px;border-top:1px solid #e9e0c8;font-size:12px;color:#4f735a">${escapeHtml(footer)}</td></tr>
 </table></td></tr></table></body></html>`;
 }
 

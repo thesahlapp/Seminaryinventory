@@ -38,13 +38,16 @@ export async function lowStockLines(supabase: Supabase, onlyItemId?: string): Pr
   const options = await poItemOptions(supabase, [...new Set((low ?? []).map((r) => r.item_id!))]);
 
   const lines: PoLine[] = [];
-  for (const row of low ?? []) {
+  // Size-specific minimums first (they say exactly which size is short).
+  const ordered = [...(low ?? [])].sort((a, b) => Number(b.variant_id !== null) - Number(a.variant_id !== null));
+  for (const row of ordered) {
     const option = options.get(row.item_id!);
     if (!option || !option.variants.length) continue;
-    // Item-level minimum on a sized item: order the size with the least stock.
+    // Item-level minimum on a sized item: order the least-stocked size not already on the PO.
     const variantId =
-      row.variant_id ?? [...option.variants].sort((a, b) => a.onHand - b.onHand)[0].id;
-    if (lines.some((l) => l.variantId === variantId)) continue;
+      row.variant_id ??
+      [...option.variants].filter((v) => !lines.some((l) => l.variantId === v.id)).sort((a, b) => a.onHand - b.onHand)[0]?.id;
+    if (!variantId || lines.some((l) => l.variantId === variantId)) continue;
     lines.push({
       key: `${row.item_id}-${variantId}`,
       item: { ...option, variants: option.variants.map(({ id, label }) => ({ id, label })) },

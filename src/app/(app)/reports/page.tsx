@@ -338,7 +338,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
             ariaLabel="Inventory value per day"
             labels={valueSeries.map((v) => short(v.day))}
             series={[{ name: "Value", color: "var(--color-chart-single)", values: valueSeries.map((v) => Number(v.value)) }]}
-            format={(n) => formatMoneyCompact(n)}
+            valueFormat="money"
             area
           />
           {value && value.by_category.length > 0 && (

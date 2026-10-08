@@ -13,7 +13,7 @@ const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicag
 const prettyDate = (d: string) => new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${d}T12:00:00Z`));
 
 function table(headers: string[], rows: string[][]) {
-  const th = headers.map((h) => `<th align="left" style="padding:6px 8px;border-bottom:1px solid #e9e0c8;font-size:12px;color:#557a60">${escapeHtml(h)}</th>`).join("");
+  const th = headers.map((h) => `<th align="left" style="padding:6px 8px;border-bottom:1px solid #e9e0c8;font-size:12px;color:#4f735a">${escapeHtml(h)}</th>`).join("");
   const tr = rows
     .map((r) => `<tr>${r.map((c) => `<td style="padding:6px 8px;border-bottom:1px solid #f5f0e1;font-size:14px">${c}</td>`).join("")}</tr>`)
     .join("");

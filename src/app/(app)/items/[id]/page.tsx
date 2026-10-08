@@ -472,7 +472,7 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
   return (
     <div>
       <dt className="text-xs font-medium uppercase tracking-wide text-brand-400">{label}</dt>
-      <dd className="mt-0.5 whitespace-pre-wrap text-brand-800">{children || <span className="text-brand-300">—</span>}</dd>
+      <dd className="mt-0.5 whitespace-pre-wrap text-brand-800">{children || <span className="text-brand-400">—</span>}</dd>
     </div>
   );
 }

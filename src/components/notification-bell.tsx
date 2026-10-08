@@ -56,7 +56,7 @@ export function NotificationBell({ initialCount }: { initialCount: number }) {
       >
         <BellIcon className="size-6" />
         {count > 0 && (
-          <span className="absolute right-0.5 top-0.5 flex min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[11px] font-bold leading-5 text-white dark:bg-[#e5484d]">
+          <span className="absolute right-0.5 top-0.5 flex min-w-5 items-center justify-center rounded-full bg-[#c4302b] px-1 text-[11px] font-bold leading-5 text-white">
             {count > 9 ? "9+" : count}
           </span>
         )}

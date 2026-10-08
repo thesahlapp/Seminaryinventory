@@ -72,6 +72,14 @@ export default async function AuditPage({ params }: PageProps<"/audits/[id]">) {
         }
       />
 
+      {!inProgress && (
+        <p role="status" className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-800">
+          {audit.status === "completed"
+            ? "Corrections applied. Stock for the counted items now matches this count, logged as “Audit correction”."
+            : "This count was cancelled. Nothing in stock was changed."}
+        </p>
+      )}
+
       {inProgress && canEdit(profile.role) && <AuditCounter auditId={audit.id} lines={lines} />}
 
       <Card>

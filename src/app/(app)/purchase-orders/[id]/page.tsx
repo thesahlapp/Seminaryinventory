@@ -89,10 +89,16 @@ export default async function PurchaseOrderPage({ params }: PageProps<"/purchase
         }
       />
 
+      {po.status === "received" && (
+        <p role="status" className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-800">
+          Everything has arrived{po.received_at ? ` (${formatDate(po.received_at)})` : ""}. The stock was added to inventory and logged in the history.
+        </p>
+      )}
+
       {receivable && (
         <Card>
           <CardHeader title="Receive delivery" />
-          <ActionForm action={receivePurchaseOrder} className="space-y-4 p-4">
+          <ActionForm action={receivePurchaseOrder} resetOnSuccess className="space-y-4 p-4">
             <input type="hidden" name="id" value={po.id} />
             <p className="text-sm text-brand-500">Enter what actually arrived. It&apos;s added to stock and recorded in the history as Received.</p>
             <ul className="divide-y divide-cream-200 rounded-lg border border-cream-300">

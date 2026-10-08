@@ -211,14 +211,14 @@ function ItemTable({
                 <td className="hidden px-3 py-2 md:table-cell">{row.categoryName ?? <span className="text-brand-300">Uncategorized</span>}</td>
                 {fields.map((f) => (
                   <td key={f.id} className="hidden px-3 py-2 text-brand-600 lg:table-cell">
-                    {formatFieldValue(f, row.customFields[f.id]) || <span className="text-brand-300">—</span>}
+                    {formatFieldValue(f, row.customFields[f.id]) || <span className="text-brand-400">—</span>}
                   </td>
                 ))}
                 <td className="hidden whitespace-nowrap px-3 py-2 text-brand-500 sm:table-cell">{formatDate(row.lastUpdated)}</td>
                 <td className="hidden px-3 py-2 text-right tabular-nums text-brand-500 sm:table-cell">{row.checkedOut || "—"}</td>
                 {showCosts && (
                   <td className="hidden px-3 py-2 text-right tabular-nums md:table-cell">
-                    {row.unitCost !== null ? formatMoney(row.unitCost * (row.totalQuantity + row.checkedOut)) : <span className="text-brand-300">—</span>}
+                    {row.unitCost !== null ? formatMoney(row.unitCost * (row.totalQuantity + row.checkedOut)) : <span className="text-brand-400">—</span>}
                   </td>
                 )}
                 <td className="px-3 py-2 text-right">

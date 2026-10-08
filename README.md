@@ -8,6 +8,12 @@ Tailwind CSS and Supabase (Postgres, Auth, Storage).
 - **Every quantity change** is logged with who, when, old value, new value and a reason.
 - **Sign-in is invite-only** (Supabase Auth, email and password). There are three roles:
   `admin`, `editor` and `viewer`, enforced by the database (row-level security), not just the UI.
+- Also: low stock alerts, QR codes and label printing, a phone scanner, check-outs and kits,
+  costs and value (admins only), purchase orders, stock counts, comments with @mentions,
+  CSV import/export, reports, dark mode, and it installs on phones like an app.
+
+**Guides:** [Team guide](docs/TEAM-GUIDE.md) (for everyone using the app) ·
+[Backups and restoring](docs/BACKUPS.md)
 
 ---
 
@@ -107,10 +113,18 @@ migrations are added, run `npx supabase db push` again and only the new ones are
    3. `20261008000003_stock_functions.sql`
    4. `20261008000004_storage.sql`
    5. `20261008000005_editor_role_and_inventory_views.sql`
+   6. `20261009000001_new_stock_reasons.sql`
+   7. `20261009000002_features_schema.sql`
+   8. `20261009000003_features_functions.sql`
+   9. `20261009000004_reports.sql`
+   10. `20261009000005_csv_import.sql`
+
+   Run `20261009000001` on its own first: it adds new values to a list type, and Postgres
+   needs that saved before the next files can use them.
 
    If you switch to the CLI later, first mark these as already applied so it doesn't try to
    run them again:
-   `npx supabase migration repair --status applied 20261008000001 20261008000002 20261008000003 20261008000004 20261008000005`
+   `npx supabase migration repair --status applied 20261008000001 20261008000002 20261008000003 20261008000004 20261008000005 20261009000001 20261009000002 20261009000003 20261009000004 20261009000005`
 
 **Check it worked:** in **Table Editor** you should see `categories`, `items`,
 `item_variants`, `locations`, `sizes`, `stock_levels`, `stock_movements` and the other
@@ -154,18 +168,61 @@ Admins do this on the **Team** page:
   Vercel: **Environment Variables**, type **Secret**, then redeploy). Treat it like a password.
 - Invitation emails only work after step 4 (the email templates and the Site URL).
 
+### 8. Emails: low stock, overdue and @mentions (optional)
+
+The app sends three kinds of email through [Resend](https://resend.com) (free for up to
+3,000 emails a month):
+
+- a **daily low stock summary** to admins,
+- **overdue check-out reminders** to the borrower (if they're on the team) and to admins,
+- an email when someone **@mentions** you in a comment.
+
+Each person can turn these on or off under **My settings**. Without Resend set up,
+everything else works and these emails are simply skipped.
+
+1. Sign up at <https://resend.com>. Under **Domains**, add your domain (e.g.
+   `qalamseminary.org`) and add the DNS records it shows you at your domain provider.
+   Wait until it says **Verified**.
+2. Under **API Keys**, create a key with *Sending access*.
+3. Add these environment variables (`.env.local`, and in Vercel):
+   - `RESEND_API_KEY`: the key from step 2 (in Vercel, type **Secret**)
+   - `EMAIL_FROM`: e.g. `Qalam Inventory <inventory@qalamseminary.org>`, on the verified domain
+   - `CRON_SECRET`: any long random string (in Vercel, type **Secret**). It stops anyone
+     else triggering the daily job.
+   - `SUPABASE_SECRET_KEY` must also be set (see above): the daily job uses it.
+
+The daily job runs at 13:00 UTC (8 AM Dallas in summer, 7 AM in winter). It's set in
+[`vercel.json`](vercel.json), and Vercel runs it automatically after the next deploy; you can
+see it under **Settings → Cron Jobs** in Vercel. Reminders for a check-out are sent at most
+once a day.
+
+### 9. Backups
+
+Set up the daily database backup in [docs/BACKUPS.md](docs/BACKUPS.md). It takes about 10
+minutes and includes restore steps.
+
 ---
 
 ## Using the app
 
 | Page | What you can do |
 |---|---|
-| **Inventory** (home) | Grid with photos or a table. Search by name or SKU, filter by category and location (pick several), sort by name, quantity, category or last updated. Each item shows its total; hover or tap it to see the breakdown by size and location. |
+| **Home** | Totals (and value, for admins), low stock, what's checked out and overdue, the last 20 changes, and shortcuts to Scan, Add item and Move stock |
+| **Inventory** | Grid with photos or a table. Search by name or SKU, filter by category and location (pick several), sort by name, quantity, category or last updated. Each item shows its total; hover or tap it to see the breakdown by size and location. |
 | **Item page** | Photos (take one with the phone camera or choose files), a size × location grid where every number can be changed, the history log, and a form for changes with a specific reason or note. |
 | **Locations** | Every location with its item count and unit total. Open one to see everything stored there, with the same search and filters. **Move stock** moves units between locations. |
 | **History** | Every stock change, filterable by location, reason, person and date |
+| **Scan** | The round button in the menu. Opens the camera and jumps to the item or location on a QR label, with quick − / + |
+| **Checked out** | Check gear out (who, due date, project) and back in (good, damaged or missing). Overdue items are highlighted. Only items marked *Can be checked out* appear. |
+| **Kits** | Named sets of items (e.g. "Camera kit"). Shows whether everything is available and what's short; check a whole kit out at once. |
+| **Print labels** | QR labels for items, sizes, locations and kits, for Avery 5160, 5163, 5164, L7160 and L7163 sheets |
+| **Stock counts** | Count a location (several people at once, by scanning or tapping), compare with what's expected, and apply the corrections (admins) |
+| **Purchase orders** (admins) | Suppliers and orders. Receiving an order adds the stock and logs it. **Create PO** from the low stock list. |
+| **Reports** (admins) | Usage over time, fastest and slowest movers, losses, value over time and check-out stats, each with a CSV download |
+| **Import CSV** (admins) | Upload a spreadsheet, match its columns, preview (with clear errors per row), then import. **Export CSV** is on the Inventory page for everyone. |
 | **Team** (admins) | Invite people, change roles, remove people |
-| **Settings** (admins) | Categories, Locations and Sizes: add, rename, reorder, archive, restore and delete |
+| **Settings** (admins) | Categories (with custom fields per category), Locations and Sizes: add, rename, reorder, archive, restore and delete |
+| **My settings** | Name, light/dark mode, which emails you get, password, and how to install the app on your phone |
 
 **Changing quantities is instant:** tap **+** or **−**, or tap the number and type a new
 one. It saves on its own, with no Save button. Quick taps are grouped, so tapping + five
@@ -177,10 +234,11 @@ What each role can do:
 
 | | Admin | Editor | Viewer |
 |---|:-:|:-:|:-:|
-| See everything | ✓ | ✓ | ✓ |
-| Add/edit items, photos and quantities; move stock | ✓ | ✓ | |
-| Team (invite, roles, remove) | ✓ | | |
-| Settings (categories, locations, sizes) | ✓ | | |
+| See items, stock, history, check-outs, kits; scan; comment | ✓ | ✓ | ✓ |
+| Add/edit items, photos and quantities; move stock; check out and in; kits; count stock | ✓ | ✓ | |
+| Costs, retail prices and value | ✓ | | |
+| Purchase orders and suppliers, reports, CSV import, applying stock counts | ✓ | | |
+| Team (invite, roles, remove) and Settings (categories, custom fields, locations, sizes) | ✓ | | |
 
 These rules are enforced in the database. Even someone calling the Supabase API directly
 can't do more than their role allows.
@@ -201,7 +259,8 @@ any browser or phone.
 2. Before deploying, open **Environment Variables** and add:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-   - `SUPABASE_SECRET_KEY` (optional, for inviting people from the app)
+   - `SUPABASE_SECRET_KEY` (type **Secret**; for inviting people and the daily emails)
+   - `RESEND_API_KEY`, `EMAIL_FROM` and `CRON_SECRET` (optional, see step 8)
 3. Click **Deploy**. You'll get an address like `https://seminary-inventory.vercel.app`.
 4. In Supabase go to **Authentication → URL Configuration**: set **Site URL** to that
    address and add `https://seminary-inventory.vercel.app/**` to **Redirect URLs**.
@@ -222,9 +281,19 @@ any browser or phone.
 | `item_photos` | Multiple photos per item (plus a small thumbnail each), stored in the private `item-photos` bucket |
 | `stock_levels` | Current quantity per variant per location (can never go below 0) |
 | `stock_movements` | Permanent history: who, when, old value, new value, change, reason, note |
+| `item_costs` | Unit cost and retail price per item. **Admins only**: other roles can't read it at all. |
+| `category_fields` | Custom fields per category (text, number, date, dropdown, yes/no). Values live in `items.custom_fields`. |
+| `kits`, `kit_items` | Kits and the item/size and quantity in each |
+| `checkouts`, `checkout_lines` | Who has what, due date, project; what came back good, damaged or missing |
+| `suppliers`, `purchase_orders`, `purchase_order_lines` | Purchasing. **Admins only.** |
+| `audits`, `audit_lines` | Stock counts: expected vs counted per size, who counted it |
+| `item_comments`, `notifications` | Comment threads and the 🔔 notifications (@mentions) |
 | `inventory_levels` (view) | `stock_levels` joined with item, size, category and location names |
 | `location_summaries` (view) | Item count and unit total per location |
-| `inventory_items()` (function) | Search, filter and sort for the inventory page |
+| `low_stock` (view) | Items and sizes at or below their minimum |
+| `checked_out_quantities` (view) | Units currently checked out, per size |
+| `inventory_items()` (function) | Search, filter (incl. custom fields and low stock) and sort for the inventory page |
+| `dashboard_summary()`, `inventory_value()`, `report_*()` | Home page totals, value (admins) and reports (admins) |
 
 ### Changing stock
 
@@ -251,7 +320,10 @@ await supabase.rpc("transfer_stock", {
 
 Reasons: `initial_count`, `received`, `issued`, `returned`, `count_correction`, `damaged`,
 `lost`, `transfer_in` / `transfer_out` (set automatically by `transfer_stock`), and `other`
-(a note is required).
+(a note is required). `checked_out`, `checked_in` and `audit_correction` are set only by
+the check-out, check-in and stock count functions (`checkout_items`, `checkin_items`,
+`apply_audit`), and receiving a purchase order (`receive_purchase_order`) logs `received`
+with a link to the order.
 
 ### Rules the database enforces
 
@@ -263,13 +335,13 @@ Reasons: `initial_count`, `received`, `issued`, `returned`, `count_correction`, 
   recorded against it.
 - Admins manage categories, locations and sizes. Admins and editors edit items, photos and
   stock. Viewers can only read. Signed-out visitors can't see anything.
+- Costs, suppliers and purchase orders are only readable by admins, enforced by row-level
+  security, so they never reach anyone else's browser.
+- People can only change their own name, theme and email settings, and only admins can
+  change roles. Comments can be edited only by their author and deleted by the author or an
+  admin.
 
-### Room for future features
-
-Nothing for these is built yet. The schema already leaves room for each:
-
-| Feature | How it fits |
-|---|---|
+---|---|
 | Custom fields per category | `items.custom_fields` (jsonb) already exists. Add a `category_fields` table to define the fields. |
 | Kits / bundles | `items.item_type` already has a `kit` value. Add a `kit_components` table (kit item → component variant, quantity). |
 | Check-outs | Add a `checkouts` table. Its stock changes use `stock_movements.reference_type = 'checkout'` and `reference_id`. |
@@ -283,12 +355,18 @@ Nothing for these is built yet. The schema already leaves room for each:
 ```
 src/
   app/
-    (app)/            signed-in area: items (inventory), locations, history, team, settings
+    (app)/            signed-in area: dashboard, items, locations, checkouts, kits,
+                      purchase-orders, audits, labels, scan, import, reports, team, settings
+    api/cron/daily/   daily low stock + overdue emails (Vercel Cron)
+    api/export/       CSV export and import template
+    q/[kind]/[id]/    where QR codes point (redirects to the item, location or kit)
     auth/confirm/     handles invite & password-reset email links
     login/            sign-in page and auth server actions
+    manifest.ts       PWA manifest (public/sw.js is the service worker)
   components/
     inventory/        inventory grid/table, filters, +/− quantity control, breakdown
-    photos/           photo gallery and camera/file upload buttons
+    photos/           gallery, reordering and captions, camera/file upload buttons
+    qr/, charts/, comments/
   lib/
     auth.ts           current user/role helpers used by pages and actions
     inventory.ts      loads the inventory page (calls inventory_items())
@@ -302,6 +380,9 @@ src/
 supabase/
   migrations/         SQL migrations, applied in filename order
   templates/          invite and password-reset email templates
+docs/                 team guide, backups and restoring
+scripts/              restore-backup.sh
+.github/workflows/    daily database backup
 ```
 
 ## Scripts
