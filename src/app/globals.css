@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+/*
+ * Qalam Seminary palette
+ *   brand  - Pantone 553 C green (#284734) and tints/shades
+ *   cream  - warm paper background
+ */
+@theme {
+  --color-brand-50: #eef3ef;
+  --color-brand-100: #d5e1d8;
+  --color-brand-200: #aec4b4;
+  --color-brand-300: #7f9f88;
+  --color-brand-400: #557a60;
+  --color-brand-500: #3a5e46;
+  --color-brand-600: #2f523c;
+  --color-brand-700: #284734;
+  --color-brand-800: #1f3829;
+  --color-brand-900: #16281d;
+  --color-brand: #284734;
+
+  --color-cream-50: #fdfbf6;
+  --color-cream-100: #f9f5eb;
+  --color-cream: #f5f0e1;
+  --color-cream-200: #f5f0e1;
+  --color-cream-300: #e9e0c8;
+  --color-cream-400: #d8cba8;
+
+  --color-ink: #1c2420;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+}
