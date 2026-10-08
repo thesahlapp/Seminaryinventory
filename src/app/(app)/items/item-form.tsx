@@ -6,6 +6,8 @@ import { SubmitButton } from "@/components/action-form";
 import { PhotoButtons } from "@/components/photos/photo-buttons";
 import { Alert, Card, Field, Input, LinkButton, Select, Textarea } from "@/components/ui";
 import { initialActionState } from "@/lib/action-state";
+import { type CategoryField, fieldInputValue } from "@/lib/custom-fields";
+import type { Json } from "@/lib/supabase/database.types";
 import { uploadItemPhotos } from "@/lib/upload-photos";
 import { createItem, updateItem } from "./actions";
 
@@ -19,30 +21,45 @@ type Item = {
   description: string | null;
   notes: string | null;
   has_sizes: boolean;
+  checkoutable: boolean;
+  min_quantity: number | null;
+  custom_fields: Json;
 };
 
 export function ItemForm({
   categories,
+  fields,
   sizes,
   item,
+  costs,
+  showCosts,
   sizingLocked = false,
 }: {
   categories: Category[];
+  /** Custom fields of every category; the ones for the chosen category are shown. */
+  fields: CategoryField[];
   sizes: Size[];
   /** Present when editing. */
   item?: Item;
+  costs?: { unit_cost: number | null; retail_price: number | null } | null;
+  /** Admins only. */
+  showCosts: boolean;
   /** True when the item has stock history, so sized/unsized can no longer change. */
   sizingLocked?: boolean;
 }) {
   const isEdit = Boolean(item);
   const router = useRouter();
   const [state, dispatch, pending] = useActionState(isEdit ? updateItem : createItem, initialActionState);
+  const [categoryId, setCategoryId] = useState(item?.category_id ?? "");
   const [hasSizes, setHasSizes] = useState(item?.has_sizes ?? false);
   const [sizesTouched, setSizesTouched] = useState(isEdit);
   const [photos, setPhotos] = useState<{ file: File; preview: string }[]>([]);
   const [uploading, setUploading] = useState<string | null>(null);
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
   const handledItemId = useRef<string | null>(null);
+
+  const categoryFields = fields.filter((f) => f.category_id === categoryId).sort((a, b) => a.sort_order - b.sort_order);
+  const savedValues = (item?.category_id === categoryId ? item?.custom_fields : {}) as Record<string, Json>;
 
   // After a new item is created: upload its photos, then open it.
   useEffect(() => {
@@ -107,8 +124,9 @@ export function ItemForm({
             <Select
               id="category_id"
               name="category_id"
-              defaultValue={item?.category_id ?? ""}
+              value={categoryId}
               onChange={(e) => {
+                setCategoryId(e.target.value);
                 // New items follow the category's default until sizes are set by hand.
                 const category = categories.find((c) => c.id === e.target.value);
                 if (!sizesTouched && category) setHasSizes(category.default_has_sizes);
@@ -122,7 +140,34 @@ export function ItemForm({
               ))}
             </Select>
           </Field>
+          <Field
+            label="Low stock alert at"
+            htmlFor="min_quantity"
+            hint={hasSizes ? "For the total of all sizes. Set per-size minimums on the item page." : "Leave blank for no alert."}
+          >
+            <Input
+              id="min_quantity"
+              name="min_quantity"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              step={1}
+              defaultValue={item?.min_quantity ?? ""}
+              placeholder="e.g. 5"
+            />
+          </Field>
         </div>
+
+        {categoryFields.length > 0 && (
+          <fieldset className="grid gap-5 rounded-lg border border-cream-300 p-4 sm:grid-cols-2">
+            <legend className="px-1 text-sm font-medium text-brand-800">
+              {categories.find((c) => c.id === categoryId)?.name} details
+            </legend>
+            {categoryFields.map((field) => (
+              <CustomFieldInput key={field.id} field={field} value={savedValues?.[field.id]} />
+            ))}
+          </fieldset>
+        )}
 
         <Field label="Description" htmlFor="description">
           <Textarea id="description" name="description" defaultValue={item?.description ?? ""} />
@@ -131,7 +176,23 @@ export function ItemForm({
           <Textarea id="notes" name="notes" defaultValue={item?.notes ?? ""} />
         </Field>
 
+        {showCosts && (
+          <fieldset className="grid gap-5 rounded-lg border border-cream-300 p-4 sm:grid-cols-2">
+            <legend className="px-1 text-sm font-medium text-brand-800">Cost (only admins can see this)</legend>
+            <Field label="Unit cost ($)" htmlFor="unit_cost">
+              <Input id="unit_cost" name="unit_cost" inputMode="decimal" defaultValue={costs?.unit_cost ?? ""} placeholder="e.g. 18.50" />
+            </Field>
+            <Field label="Retail price ($)" htmlFor="retail_price" hint="Optional">
+              <Input id="retail_price" name="retail_price" inputMode="decimal" defaultValue={costs?.retail_price ?? ""} placeholder="e.g. 35.00" />
+            </Field>
+          </fieldset>
+        )}
+
         <fieldset className="space-y-3 rounded-lg border border-cream-300 p-4">
+          <label className="flex items-center gap-2 text-sm font-medium text-brand-800">
+            <input type="checkbox" name="checkoutable" defaultChecked={item?.checkoutable} className="size-4 accent-[#2f6b47]" />
+            Can be checked out (lent to people or taken on jobs)
+          </label>
           <label className="flex items-center gap-2 text-sm font-medium text-brand-800">
             <input
               type="checkbox"
@@ -151,7 +212,7 @@ export function ItemForm({
               {/* Disabled checkboxes aren't submitted, so send the current value. */}
               {hasSizes && <input type="hidden" name="has_sizes" value="on" />}
               <p className="text-xs text-brand-400">
-                This can&apos;t be changed because stock has already been recorded for this item.
+                Sizes can&apos;t be turned on or off because stock has already been recorded for this item.
               </p>
             </>
           )}
@@ -170,15 +231,9 @@ export function ItemForm({
                 {sizes.map((size) => (
                   <label
                     key={size.id}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-md border border-cream-400 bg-cream-50 px-3 py-1.5 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand-50"
+                    className="flex cursor-pointer items-center gap-1.5 rounded-md border border-cream-400 bg-cream-50 px-3 py-1.5 text-sm has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50"
                   >
-                    <input
-                      type="checkbox"
-                      name="size_ids"
-                      value={size.id}
-                      defaultChecked={size.is_standard}
-                      className="accent-[#2f6b47]"
-                    />
+                    <input type="checkbox" name="size_ids" value={size.id} defaultChecked={size.is_standard} className="accent-[#2f6b47]" />
                     {size.label}
                   </label>
                 ))}
@@ -203,25 +258,23 @@ export function ItemForm({
                         setPhotos(photos.filter((_, i) => i !== index));
                       }}
                       aria-label="Remove photo"
-                      className="absolute -right-1.5 -top-1.5 flex size-6 items-center justify-center rounded-full bg-ink/80 text-xs text-cream"
+                      className="absolute -right-1.5 -top-1.5 flex size-6 items-center justify-center rounded-full bg-black/75 text-xs text-white"
                     >
                       ✕
                     </button>
                     {index === 0 && (
-                      <span className="absolute inset-x-0 bottom-0 rounded-b-md bg-ink/60 text-center text-[10px] text-cream">
-                        Cover
-                      </span>
+                      <span className="absolute inset-x-0 bottom-0 rounded-b-md bg-black/60 text-center text-[10px] text-white">Cover</span>
                     )}
                   </li>
                 ))}
               </ul>
             )}
             <PhotoButtons
-              onFiles={(files) =>
-                setPhotos([...photos, ...files.map((file) => ({ file, preview: URL.createObjectURL(file) }))])
-              }
+              onFiles={(files) => setPhotos([...photos, ...files.map((file) => ({ file, preview: URL.createObjectURL(file) }))])}
             />
-            <p className="text-xs text-brand-400">Photos are shrunk before uploading, so they&apos;re quick even on mobile data.</p>
+            <p className="text-xs text-brand-400">
+              Add several at once. The first is the cover. You can reorder and caption them after saving.
+            </p>
           </fieldset>
         )}
 
@@ -235,5 +288,35 @@ export function ItemForm({
         </div>
       </Card>
     </form>
+  );
+}
+
+function CustomFieldInput({ field, value }: { field: CategoryField; value: Json | undefined }) {
+  const id = `cf-${field.id}`;
+  const name = `cf:${field.id}`;
+  const defaultValue = fieldInputValue(field, value);
+
+  return (
+    <Field label={field.label} htmlFor={id}>
+      {field.field_type === "select" || field.field_type === "boolean" ? (
+        <Select id={id} name={name} defaultValue={defaultValue}>
+          <option value="">—</option>
+          {(field.field_type === "boolean" ? ["yes", "no"] : field.options).map((option) => (
+            <option key={option} value={option}>
+              {field.field_type === "boolean" ? (option === "yes" ? "Yes" : "No") : option}
+            </option>
+          ))}
+        </Select>
+      ) : (
+        <Input
+          id={id}
+          name={name}
+          type={field.field_type === "date" ? "date" : field.field_type === "number" ? "number" : "text"}
+          step={field.field_type === "number" ? "any" : undefined}
+          inputMode={field.field_type === "number" ? "decimal" : undefined}
+          defaultValue={defaultValue}
+        />
+      )}
+    </Field>
   );
 }

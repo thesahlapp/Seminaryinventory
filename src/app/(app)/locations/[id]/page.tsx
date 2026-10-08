@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { InventoryBrowser } from "@/components/inventory/inventory-browser";
 import { Badge, LinkButton, PageHeader } from "@/components/ui";
-import { canEdit, getCurrentProfile } from "@/lib/auth";
+import { canEdit, getCurrentProfile, isAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Location" };
@@ -54,6 +54,7 @@ export default async function LocationPage({ params, searchParams }: PageProps<"
         searchParams={await searchParams}
         basePath={`/locations/${location.id}`}
         canEdit={editor && !location.archived_at}
+        showCosts={isAdmin(profile.role)}
         fixedLocationId={location.id}
       />
     </div>

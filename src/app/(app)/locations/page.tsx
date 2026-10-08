@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, Card, EmptyState, LinkButton, PageHeader } from "@/components/ui";
 import { canEdit, getCurrentProfile, isAdmin } from "@/lib/auth";
+import { formatMoneyCompact } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Locations" };
@@ -9,12 +10,18 @@ export const metadata: Metadata = { title: "Locations" };
 export default async function LocationsPage() {
   const profile = await getCurrentProfile();
   const supabase = await createClient();
-  const { data: locations, error } = await supabase
-    .from("location_summaries")
-    .select("id, name, address, description, archived_at, item_count, total_units")
-    .order("sort_order")
-    .order("name");
+  const [{ data: locations, error }, value] = await Promise.all([
+    supabase
+      .from("location_summaries")
+      .select("id, name, address, description, archived_at, item_count, total_units")
+      .order("sort_order")
+      .order("name"),
+    isAdmin(profile.role) ? supabase.rpc("inventory_value") : null,
+  ]);
   if (error) throw error;
+  const valueByLocation = new Map(
+    ((value?.data as { by_location?: { id: string; cost_value: number }[] } | null)?.by_location ?? []).map((l) => [l.id, Number(l.cost_value)]),
+  );
 
   const active = locations.filter((l) => !l.archived_at);
   // Archived locations are listed only while they still hold stock.
@@ -80,6 +87,14 @@ export default async function LocationsPage() {
                       {Number(location.total_units).toLocaleString()}
                     </dd>
                   </div>
+                  {valueByLocation.size > 0 && (
+                    <div>
+                      <dt className="text-xs uppercase tracking-wide text-brand-400">Value</dt>
+                      <dd className="font-display text-2xl font-semibold tabular-nums text-brand-700">
+                        {formatMoneyCompact(valueByLocation.get(location.id!) ?? 0)}
+                      </dd>
+                    </div>
+                  )}
                 </dl>
               </Link>
             </li>

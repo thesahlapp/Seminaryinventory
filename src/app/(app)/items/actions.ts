@@ -5,19 +5,72 @@ import { redirect } from "next/navigation";
 import type { ActionState } from "@/lib/action-state";
 import { authorize } from "@/lib/auth";
 import { friendlyError } from "@/lib/errors";
+import { readCustomFields, type CategoryField } from "@/lib/custom-fields";
 import { formText, REASON_LABELS, type StockReason } from "@/lib/format";
+import type { Json } from "@/lib/supabase/database.types";
+import type { createClient } from "@/lib/supabase/server";
+
+type Supabase = Awaited<ReturnType<typeof createClient>>;
 
 const SKU_TAKEN = "Another item already uses that SKU.";
 
-function readItemFields(formData: FormData) {
+function readWholeNumberOrNull(formData: FormData, name: string) {
+  const raw = formText(formData, name);
+  if (raw === null) return { value: null };
+  return /^\d+$/.test(raw) ? { value: Number(raw) } : { error: "Minimum quantity must be a whole number." };
+}
+
+function readMoney(formData: FormData, name: string, label: string) {
+  const raw = formText(formData, name)?.replace(/[$,\s]/g, "") ?? null;
+  if (raw === null) return { value: null };
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? { value: Math.round(n * 100) / 100 } : { error: `${label} must be an amount like 12.50.` };
+}
+
+/** Reads and validates the item form, including custom fields for its category. */
+async function readItemForm(supabase: Supabase, formData: FormData) {
+  const categoryId = formText(formData, "category_id");
+  const min = readWholeNumberOrNull(formData, "min_quantity");
+  if (min.error) return { error: min.error };
+
+  let customFields: Record<string, Json> = {};
+  if (categoryId) {
+    const { data: fields } = await supabase.from("category_fields").select("*").eq("category_id", categoryId);
+    const parsed = readCustomFields((fields ?? []) as CategoryField[], formData);
+    if (parsed.error) return { error: parsed.error };
+    customFields = parsed.values ?? {};
+  }
+
   return {
-    name: formText(formData, "name"),
-    sku: formText(formData, "sku"),
-    category_id: formText(formData, "category_id"),
-    description: formText(formData, "description"),
-    notes: formText(formData, "notes"),
-    has_sizes: formData.get("has_sizes") === "on",
+    item: {
+      name: formText(formData, "name"),
+      sku: formText(formData, "sku"),
+      category_id: categoryId,
+      description: formText(formData, "description"),
+      notes: formText(formData, "notes"),
+      has_sizes: formData.get("has_sizes") === "on",
+      checkoutable: formData.get("checkoutable") === "on",
+      min_quantity: min.value,
+      custom_fields: customFields,
+    },
   };
+}
+
+/** Saves cost and retail price (admins only; the database enforces this too). */
+async function saveCosts(supabase: Supabase, itemId: string, formData: FormData, isAdmin: boolean) {
+  if (!isAdmin || !formData.has("unit_cost")) return {};
+  const cost = readMoney(formData, "unit_cost", "Unit cost");
+  if (cost.error) return { error: cost.error };
+  const retail = readMoney(formData, "retail_price", "Retail price");
+  if (retail.error) return { error: retail.error };
+
+  const { error } =
+    cost.value === null && retail.value === null
+      ? await supabase.from("item_costs").delete().eq("item_id", itemId)
+      : await supabase
+          .from("item_costs")
+          .upsert({ item_id: itemId, unit_cost: cost.value, retail_price: retail.value });
+  return error ? { error: friendlyError(error) } : {};
 }
 
 export async function createItem(_: ActionState, formData: FormData): Promise<ActionState> {
@@ -25,8 +78,12 @@ export async function createItem(_: ActionState, formData: FormData): Promise<Ac
   if ("error" in auth) return { error: auth.error };
   const { supabase } = auth;
 
-  const { name, ...rest } = readItemFields(formData);
+  const form = await readItemForm(supabase, formData);
+  if ("error" in form) return { error: form.error };
+  const { name, ...rest } = form.item;
   if (!name) return { error: "Enter a name for the item." };
+  const costCheck = readMoney(formData, "unit_cost", "Unit cost").error ?? readMoney(formData, "retail_price", "Retail price").error;
+  if (costCheck) return { error: costCheck };
 
   const sizeIds = formData.getAll("size_ids").map(String);
   if (rest.has_sizes && sizeIds.length === 0) {
@@ -50,6 +107,9 @@ export async function createItem(_: ActionState, formData: FormData): Promise<Ac
     }
   }
 
+  const costs = await saveCosts(supabase, item.id, formData, auth.profile.role === "admin");
+  if (costs.error) return { error: `The item was created, but the cost wasn't saved: ${costs.error}`, itemId: item.id };
+
   // The form uploads any photos, then opens the item.
   return { success: "Item created.", itemId: item.id };
 }
@@ -59,7 +119,9 @@ export async function updateItem(_: ActionState, formData: FormData): Promise<Ac
   if ("error" in auth) return { error: auth.error };
 
   const id = String(formData.get("id"));
-  const { name, ...rest } = readItemFields(formData);
+  const form = await readItemForm(auth.supabase, formData);
+  if ("error" in form) return { error: form.error };
+  const { name, ...rest } = form.item;
   if (!name) return { error: "Enter a name for the item." };
 
   const { error } = await auth.supabase
@@ -67,6 +129,9 @@ export async function updateItem(_: ActionState, formData: FormData): Promise<Ac
     .update({ name, ...rest })
     .eq("id", id);
   if (error) return { error: friendlyError(error, { duplicate: SKU_TAKEN }) };
+
+  const costs = await saveCosts(auth.supabase, id, formData, auth.profile.role === "admin");
+  if (costs.error) return { error: costs.error };
 
   redirect(`/items/${id}`);
 }
@@ -255,4 +320,27 @@ export async function changeStock(_: ActionState, formData: FormData): Promise<A
   }
 
   return { error: "Choose what you want to do." };
+}
+
+// ---------------------------------------------------------------------------
+// Per-size minimums (low stock alerts for clothing)
+// ---------------------------------------------------------------------------
+
+export async function saveSizeMinimums(_: ActionState, formData: FormData): Promise<ActionState> {
+  const auth = await authorize("edit");
+  if ("error" in auth) return { error: auth.error };
+
+  for (const [key, raw] of formData.entries()) {
+    if (!key.startsWith("min:")) continue;
+    const text = String(raw).trim();
+    if (text !== "" && !/^\d+$/.test(text)) return { error: "Minimums must be whole numbers (or blank for none)." };
+    const { error } = await auth.supabase
+      .from("item_variants")
+      .update({ min_quantity: text === "" ? null : Number(text) })
+      .eq("id", key.slice(4));
+    if (error) return { error: friendlyError(error) };
+  }
+
+  refresh();
+  return { success: "Minimums saved." };
 }

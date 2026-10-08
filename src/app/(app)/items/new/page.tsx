@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/ui";
-import { canEdit, getCurrentProfile } from "@/lib/auth";
+import { canEdit, getCurrentProfile, isAdmin } from "@/lib/auth";
+import type { CategoryField } from "@/lib/custom-fields";
 import { createClient } from "@/lib/supabase/server";
 import { ItemForm } from "../item-form";
 
@@ -13,9 +14,10 @@ export default async function NewItemPage() {
   }
 
   const supabase = await createClient();
-  const [categories, sizes] = await Promise.all([
+  const [categories, sizes, fields] = await Promise.all([
     supabase.from("categories").select("id, name, default_has_sizes").is("archived_at", null).order("sort_order").order("name"),
     supabase.from("sizes").select("id, label, is_standard").is("archived_at", null).order("sort_order").order("label"),
+    supabase.from("category_fields").select("*"),
   ]);
   if (categories.error) throw categories.error;
   if (sizes.error) throw sizes.error;
@@ -23,7 +25,12 @@ export default async function NewItemPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <PageHeader title="Add item" description="Add photos now or later. You’ll set quantities on the next page." />
-      <ItemForm categories={categories.data} sizes={sizes.data} />
+      <ItemForm
+        categories={categories.data}
+        sizes={sizes.data}
+        fields={(fields.data ?? []) as CategoryField[]}
+        showCosts={isAdmin(profile.role)}
+      />
     </div>
   );
 }

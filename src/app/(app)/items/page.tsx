@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { InventoryBrowser } from "@/components/inventory/inventory-browser";
 import { LinkButton, PageHeader } from "@/components/ui";
-import { canEdit, getCurrentProfile } from "@/lib/auth";
+import { canEdit, getCurrentProfile, isAdmin } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Inventory" };
 
@@ -24,7 +24,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/items"
           )
         }
       />
-      <InventoryBrowser searchParams={await searchParams} basePath="/items" canEdit={editor} />
+      <InventoryBrowser searchParams={await searchParams} basePath="/items" canEdit={editor} showCosts={isAdmin(profile.role)} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Input } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
 import { AddEntryCard, EntryList, InlineField, ListRow } from "../list-ui";
@@ -9,7 +10,7 @@ export default async function CategoriesPage() {
   const supabase = await createClient();
   const { data: categories, error } = await supabase
     .from("categories")
-    .select("id, name, description, default_has_sizes, sort_order, archived_at, items(count)")
+    .select("id, name, description, default_has_sizes, sort_order, archived_at, items(count), category_fields(count)")
     .order("sort_order")
     .order("name");
   if (error) throw error;
@@ -25,7 +26,14 @@ export default async function CategoriesPage() {
         table="categories"
         id={c.id}
         archived={Boolean(c.archived_at)}
-        usage={`${itemCount} item${itemCount === 1 ? "" : "s"}`}
+        usage={
+          <>
+            <Link href={`/settings/categories/${c.id}`} className="font-medium text-brand-600 underline-offset-2 hover:underline">
+              Custom fields ({c.category_fields[0]?.count ?? 0})
+            </Link>
+            {` · ${itemCount} item${itemCount === 1 ? "" : "s"}`}
+          </>
+        }
       >
         <CategoryFields category={c} />
       </ListRow>
