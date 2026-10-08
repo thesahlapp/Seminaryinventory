@@ -6,7 +6,8 @@ import { friendlyError } from "@/lib/errors";
 /*
  * Instant quantity changes from the +/− buttons and the tap-to-type field.
  * The history records:  + as "Received",  − as "Issued",  a typed number as
- * "Count correction". (The item page has a form for other reasons and notes.)
+ * "Count correction" (or "Initial count" the first time a size is counted at
+ * a location). The item page has a form for other reasons and notes.
  */
 
 type QuantityResult = { quantity: number } | { error: string };
@@ -41,11 +42,18 @@ export async function setQuantity(variantId: string, locationId: string, quantit
   const auth = await authorize("edit");
   if ("error" in auth) return { error: auth.error };
 
+  // No history yet for this size here: it's the first count, not a correction.
+  const { count: previousChanges } = await auth.supabase
+    .from("stock_movements")
+    .select("id", { count: "exact", head: true })
+    .eq("variant_id", variantId)
+    .eq("location_id", locationId);
+
   const { data, error } = await auth.supabase.rpc("set_stock", {
     p_variant_id: variantId,
     p_location_id: locationId,
     p_new_quantity: quantity,
-    p_reason: "count_correction",
+    p_reason: previousChanges ? "count_correction" : "initial_count",
   });
   if (error) {
     // Typing the same number again is not an error worth showing.

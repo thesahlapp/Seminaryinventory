@@ -12,6 +12,9 @@ export const REASON_LABELS: Record<StockReason, string> = {
   lost: "Lost",
   transfer_in: "Transfer in",
   transfer_out: "Transfer out",
+  checked_out: "Checked out",
+  checked_in: "Checked in",
+  audit_correction: "Audit correction",
   other: "Other",
 };
 
