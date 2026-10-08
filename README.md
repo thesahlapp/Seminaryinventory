@@ -141,10 +141,59 @@ Open <http://localhost:3000> and sign in. The dashboard should show 0 items and 
 
 ### Inviting more people and changing roles
 
-- **Invite:** **Authentication → Users → Add user → Send invitation**. New users start as
-  `staff`.
-- **Change a role:** **Table Editor → profiles**, then edit the `role` column (`admin`,
-  `staff` or `viewer`). Only admins can change roles, and the last admin can't be demoted.
+Everything is done in the app under **Settings → Users** (admins only):
+
+- **Change a role:** pick Admin, Staff or Viewer and click **Update**. The last admin can't
+  be demoted.
+- **Invite someone:** this needs the optional secret key. In Supabase go to **Project
+  Settings → API Keys**, copy the **Secret key** (`sb_secret_...`), and add it as
+  `SUPABASE_SECRET_KEY` (in `.env.local`, or in Vercel's environment variables). Treat it
+  like a password. Without it, invite people from Supabase under **Authentication → Users →
+  Add user → Send invitation**; they show up in the app as Staff.
+- Invitation emails only work after you've done step 4 (the email templates and the
+  Site URL).
+
+---
+
+## Using the app
+
+| Page | What you can do |
+|---|---|
+| **Dashboard** | Totals and the 10 most recent stock changes |
+| **Items** | Search by name or SKU, filter by category, see archived items. **Add item** creates one (with sizes for clothing). |
+| **Item page** | Photos (several per item, first one is the cover), the stock grid (sizes × locations), and the form to **Add**, **Remove**, **Set count** or **Transfer** stock with a reason. Click any number in the grid to pick that size and location. Add or remove sizes, edit details, archive or delete. |
+| **History** | Every stock change, filterable by location, reason, person and date |
+| **Settings** (admins) | Categories, Locations, Sizes and Users: add, rename, reorder, archive, restore and delete |
+
+What each role can do:
+
+| | Admin | Staff | Viewer |
+|---|:-:|:-:|:-:|
+| See everything | ✓ | ✓ | ✓ |
+| Add/edit items, photos and stock | ✓ | ✓ | |
+| Settings (categories, locations, sizes, users) | ✓ | | |
+
+Deleting is blocked when something is still in use, e.g. a category that has items, a
+location that holds stock, or an item with stock history. Use **Archive** instead: it hides
+the thing without losing any history, and **Restore** brings it back.
+
+---
+
+## Putting it online (Vercel)
+
+[Vercel](https://vercel.com) hosts Next.js apps for free, so your team can use the app from
+any browser or phone.
+
+1. Sign in at <https://vercel.com> with GitHub, then click **Add New → Project** and import
+   this repository.
+2. Before deploying, open **Environment Variables** and add:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   - `SUPABASE_SECRET_KEY` (optional, for inviting people from the app)
+3. Click **Deploy**. You'll get an address like `https://seminary-inventory.vercel.app`.
+4. In Supabase go to **Authentication → URL Configuration**: set **Site URL** to that
+   address and add `https://seminary-inventory.vercel.app/**` to **Redirect URLs**.
+   Invitation and password-reset emails link to the Site URL.
 
 ---
 
@@ -220,11 +269,11 @@ Nothing for these is built yet. The schema already leaves room for each:
 ```
 src/
   app/
-    (app)/            signed-in area (header + dashboard, set-password page)
+    (app)/            signed-in area: dashboard, items, history, settings, account
     auth/confirm/     handles invite & password-reset email links
     login/            sign-in page and auth server actions
   lib/
-    auth.ts           getCurrentProfile() helper
+    auth.ts           current user/role helpers used by pages and actions
     supabase/
       client.ts       Supabase client for Client Components
       server.ts       Supabase client for Server Components / Actions / Route Handlers
