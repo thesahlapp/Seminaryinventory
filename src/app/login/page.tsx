@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Suspense } from "react";
 import { Alert, Button, Input, Label } from "@/components/ui";
 import { sendPasswordReset, signIn } from "./actions";
+import { EmailLinkHandler } from "./email-link-handler";
 
 export const metadata: Metadata = { title: "Sign in" };
 
@@ -23,9 +24,11 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
         </h1>
 
         <div className="mt-6 rounded-xl border border-cream-300 bg-cream-50 p-6 shadow-sm">
-          <Suspense>
-            <LoginForm searchParams={searchParams} />
-          </Suspense>
+          <EmailLinkHandler>
+            <Suspense>
+              <LoginForm searchParams={searchParams} />
+            </Suspense>
+          </EmailLinkHandler>
         </div>
 
         <p className="mt-6 text-center text-xs text-brand-400">

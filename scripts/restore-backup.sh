@@ -10,7 +10,7 @@ for f in schema.sql data.sql; do
   [ -f "$dir/$f" ] || { echo "Missing $dir/$f" >&2; exit 1; }
 done
 
-echo "1/3 Restoring tables, functions, security rules and data…"
+echo "1/4 Restoring tables, functions, security rules and data…"
 psql --single-transaction --variable ON_ERROR_STOP=1 --quiet \
   --file "$dir/schema.sql" \
   --command 'SET session_replication_role = replica' \
@@ -23,7 +23,7 @@ psql --single-transaction --variable ON_ERROR_STOP=1 --quiet \
 # Postgres defaults, so take those automatic grants away again and re-apply the
 # exact grants from the backup. Row-level security protects the data either way;
 # this restores the second layer too.
-echo "2/3 Restoring permissions…"
+echo "2/4 Restoring permissions…"
 {
   echo "begin;"
   echo "revoke all on all tables in schema public from anon, authenticated;"
@@ -34,7 +34,11 @@ echo "2/3 Restoring permissions…"
   echo "commit;"
 } | psql --variable ON_ERROR_STOP=1 --quiet --dbname "$db"
 
-echo "3/3 Checking…"
+echo "3/4 Restoring the sign-up trigger and photo permissions…"
+PGOPTIONS="-c client_min_messages=warning" psql --single-transaction --variable ON_ERROR_STOP=1 --quiet \
+  --file "$(dirname "$0")/../supabase/restore/after-restore.sql" --dbname "$db"
+
+echo "4/4 Checking…"
 psql --dbname "$db" --tuples-only --command \
   "select format('%s items, %s history rows, %s users', (select count(*) from public.items), (select count(*) from public.stock_movements), (select count(*) from auth.users));"
 echo "Done. Next: the steps after restoring in docs/BACKUPS.md."
