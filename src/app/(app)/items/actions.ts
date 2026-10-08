@@ -50,7 +50,8 @@ export async function createItem(_: ActionState, formData: FormData): Promise<Ac
     }
   }
 
-  redirect(`/items/${item.id}`);
+  // The form uploads any photos, then opens the item.
+  return { success: "Item created.", itemId: item.id };
 }
 
 export async function updateItem(_: ActionState, formData: FormData): Promise<ActionState> {
@@ -92,7 +93,7 @@ export async function deleteItem(_: ActionState, formData: FormData): Promise<Ac
   const { supabase } = auth;
 
   const id = String(formData.get("id"));
-  const { data: photos } = await supabase.from("item_photos").select("storage_path").eq("item_id", id);
+  const { data: photos } = await supabase.from("item_photos").select("storage_path, thumbnail_path").eq("item_id", id);
 
   const { error } = await supabase.from("items").delete().eq("id", id);
   if (error) {
@@ -104,7 +105,9 @@ export async function deleteItem(_: ActionState, formData: FormData): Promise<Ac
   }
 
   if (photos?.length) {
-    await supabase.storage.from("item-photos").remove(photos.map((p) => p.storage_path));
+    await supabase.storage
+      .from("item-photos")
+      .remove(photos.flatMap((p) => (p.thumbnail_path ? [p.storage_path, p.thumbnail_path] : [p.storage_path])));
   }
 
   redirect("/items");

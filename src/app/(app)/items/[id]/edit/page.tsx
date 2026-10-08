@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { PhotoManager } from "@/components/photos/photo-manager";
 import { PageHeader } from "@/components/ui";
 import { canEdit, getCurrentProfile } from "@/lib/auth";
+import { getPhotoUrls } from "@/lib/photos";
 import { createClient } from "@/lib/supabase/server";
 import { ItemForm } from "../../item-form";
 
@@ -18,8 +20,9 @@ export default async function EditItemPage({ params }: PageProps<"/items/[id]/ed
   const [item, categories, history] = await Promise.all([
     supabase
       .from("items")
-      .select("id, name, sku, category_id, description, notes, has_sizes")
+      .select("id, name, sku, category_id, description, notes, has_sizes, item_photos(id, storage_path, thumbnail_path, sort_order)")
       .eq("id", id)
+      .order("sort_order", { referencedTable: "item_photos" })
       .maybeSingle(),
     supabase.from("categories").select("id, name, default_has_sizes, archived_at").order("sort_order").order("name"),
     supabase
@@ -31,17 +34,26 @@ export default async function EditItemPage({ params }: PageProps<"/items/[id]/ed
   if (categories.error) throw categories.error;
   if (!item.data) notFound();
 
+  const photos = item.data.item_photos;
+  const photoUrls = await getPhotoUrls(supabase, photos.map((p) => p.storage_path));
+
   // Keep the item's current category in the list even if it was archived.
   const categoryOptions = categories.data.filter((c) => !c.archived_at || c.id === item.data?.category_id);
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader title={`Edit ${item.data.name}`} />
       <ItemForm
         item={item.data}
         categories={categoryOptions}
         sizes={[]}
         sizingLocked={(history.count ?? 0) > 0}
+      />
+      <PhotoManager
+        itemId={item.data.id}
+        itemName={item.data.name}
+        canEdit
+        photos={photos.map((p) => ({ ...p, url: photoUrls[p.storage_path] ?? null }))}
       />
     </div>
   );

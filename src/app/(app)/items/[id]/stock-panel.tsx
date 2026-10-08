@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useManualAction } from "@/components/action-form";
+import { QuantityStepper } from "@/components/inventory/quantity-stepper";
 import { Alert, Button, Card, CardHeader, EmptyState, Input, Select } from "@/components/ui";
 import { REASON_LABELS, type StockReason } from "@/lib/format";
 import { changeStock } from "../actions";
@@ -69,13 +70,6 @@ export function StockPanel({
     if (next !== "transfer") setReason(REASONS[next][0]);
   };
 
-  const pickCell = (v: string, l: string) => {
-    if (!canEdit) return;
-    setVariantId(v);
-    setLocationId(l);
-    quantityRef.current?.focus();
-  };
-
   if (locations.length === 0) {
     return (
       <Card>
@@ -99,14 +93,19 @@ export function StockPanel({
 
   return (
     <Card>
-      <CardHeader title="Stock" actions={<span className="text-sm text-brand-500">Total: {grandTotal.toLocaleString()}</span>} />
-      <div className="overflow-x-auto">
+      <CardHeader
+        title="Stock"
+        actions={<span className="text-sm text-brand-500">Total: {grandTotal.toLocaleString()}</span>}
+      />
+
+      {/* Wider screens: sizes down the side, locations across the top. */}
+      <div className="hidden overflow-x-auto sm:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-cream-300 text-xs uppercase tracking-wide text-brand-500">
               <th className="px-4 py-2 text-left font-semibold">{sized ? "Size" : ""}</th>
               {locations.map((l) => (
-                <th key={l.id} className="px-3 py-2 text-right font-semibold">
+                <th key={l.id} className="px-3 py-2 text-center font-semibold">
                   {l.name}
                 </th>
               ))}
@@ -119,25 +118,23 @@ export function StockPanel({
                 <th scope="row" className="px-4 py-2 text-left font-medium text-brand-800">
                   {v.label ?? "Quantity"}
                 </th>
-                {locations.map((l) => {
-                  const selected = canEdit && v.id === variantId && l.id === locationId;
-                  const value = qty(v.id, l.id);
-                  return (
-                    <td key={l.id} className="px-1 py-1 text-right">
-                      <button
-                        type="button"
-                        onClick={() => pickCell(v.id, l.id)}
-                        disabled={!canEdit}
-                        title={canEdit ? `Change ${v.label ?? "stock"} at ${l.name}` : undefined}
-                        className={`w-full rounded-md px-2 py-1 text-right tabular-nums transition ${
-                          selected ? "bg-brand text-cream" : canEdit ? "hover:bg-cream-200" : ""
-                        } ${value === 0 && !selected ? "text-brand-300" : "font-semibold"}`}
-                      >
-                        {value.toLocaleString()}
-                      </button>
-                    </td>
-                  );
-                })}
+                {locations.map((l) => (
+                  <td key={l.id} className="px-2 pt-2 text-center">
+                    {canEdit ? (
+                      <QuantityStepper
+                        size="sm"
+                        variantId={v.id}
+                        locationId={l.id}
+                        quantity={qty(v.id, l.id)}
+                        label={`${v.label ? `${v.label} ` : ""}at ${l.name}`}
+                      />
+                    ) : (
+                      <span className={`tabular-nums ${qty(v.id, l.id) ? "font-semibold" : "text-brand-300"}`}>
+                        {qty(v.id, l.id)}
+                      </span>
+                    )}
+                  </td>
+                ))}
                 {locations.length > 1 && (
                   <td className="px-4 py-2 text-right font-semibold tabular-nums">{rowTotal(v.id).toLocaleString()}</td>
                 )}
@@ -151,7 +148,7 @@ export function StockPanel({
                   Total
                 </th>
                 {locations.map((l) => (
-                  <td key={l.id} className="px-3 py-2 text-right font-semibold tabular-nums">
+                  <td key={l.id} className="px-3 py-2 text-center font-semibold tabular-nums">
                     {columnTotal(l.id).toLocaleString()}
                   </td>
                 ))}
@@ -164,7 +161,49 @@ export function StockPanel({
         </table>
       </div>
 
+      {/* Phones: one block per size, a row per location. */}
+      <div className="divide-y divide-cream-200 sm:hidden">
+        {variants.map((v) => (
+          <div key={v.id} className="px-4 py-3">
+            {sized && (
+              <p className="flex justify-between pb-1 text-xs font-semibold uppercase tracking-wide text-brand-500">
+                <span>Size {v.label}</span>
+                <span className="tabular-nums">{rowTotal(v.id)}</span>
+              </p>
+            )}
+            <ul>
+              {locations.map((l) => (
+                <li key={l.id} className="flex items-center justify-between gap-3 py-1">
+                  <span className="min-w-0 truncate text-sm text-brand-800">{l.name}</span>
+                  {canEdit ? (
+                    <QuantityStepper
+                      variantId={v.id}
+                      locationId={l.id}
+                      quantity={qty(v.id, l.id)}
+                      label={`${v.label ? `${v.label} ` : ""}at ${l.name}`}
+                    />
+                  ) : (
+                    <span className="font-semibold tabular-nums">{qty(v.id, l.id)}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+
       {canEdit && (
+        <p className="border-t border-cream-300 px-5 py-2 text-xs text-brand-400">
+          Changes save instantly. + is logged as Received, − as Issued, and a typed number as a Count correction.
+        </p>
+      )}
+
+      {canEdit && (
+        <details className="group border-t border-cream-300">
+          <summary className="cursor-pointer list-none px-5 py-3 text-sm font-medium text-brand-600 hover:bg-cream-100">
+            <span className="inline-block transition group-open:rotate-90">›</span> Change with a different reason or a
+            note, or transfer between locations
+          </summary>
         <form
           className="space-y-4 border-t border-cream-300 bg-cream-100/60 px-5 py-4"
           onSubmit={onSubmit}
@@ -270,6 +309,7 @@ export function StockPanel({
             {pending ? "Saving…" : "Save change"}
           </Button>
         </form>
+        </details>
       )}
     </Card>
   );

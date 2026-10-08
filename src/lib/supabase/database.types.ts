@@ -46,6 +46,7 @@ export type Database = {
           item_id: string;
           sort_order: number;
           storage_path: string;
+          thumbnail_path: string | null;
         };
         ComputedFields: never;
         Insert: {
@@ -56,6 +57,7 @@ export type Database = {
           item_id: string;
           sort_order?: number;
           storage_path: string;
+          thumbnail_path?: string | null;
         };
         Update: {
           alt_text?: string | null;
@@ -65,6 +67,7 @@ export type Database = {
           item_id?: string;
           sort_order?: number;
           storage_path?: string;
+          thumbnail_path?: string | null;
         };
         Relationships: [
           {
@@ -342,6 +345,13 @@ export type Database = {
             foreignKeyName: "stock_levels_location_id_fkey";
             columns: ["location_id"];
             isOneToOne: false;
+            referencedRelation: "location_summaries";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "stock_levels_location_id_fkey";
+            columns: ["location_id"];
+            isOneToOne: false;
             referencedRelation: "locations";
             referencedColumns: ["id"];
           },
@@ -416,6 +426,13 @@ export type Database = {
             foreignKeyName: "stock_movements_location_id_fkey";
             columns: ["location_id"];
             isOneToOne: false;
+            referencedRelation: "location_summaries";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "stock_movements_location_id_fkey";
+            columns: ["location_id"];
+            isOneToOne: false;
             referencedRelation: "locations";
             referencedColumns: ["id"];
           },
@@ -460,6 +477,13 @@ export type Database = {
             foreignKeyName: "stock_levels_location_id_fkey";
             columns: ["location_id"];
             isOneToOne: false;
+            referencedRelation: "location_summaries";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "stock_levels_location_id_fkey";
+            columns: ["location_id"];
+            isOneToOne: false;
             referencedRelation: "locations";
             referencedColumns: ["id"];
           },
@@ -471,6 +495,20 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      location_summaries: {
+        Row: {
+          address: string | null;
+          archived_at: string | null;
+          description: string | null;
+          id: string | null;
+          item_count: number | null;
+          name: string | null;
+          sort_order: number | null;
+          total_units: number | null;
+        };
+        ComputedFields: never;
+        Relationships: [];
       };
     };
     Functions: {
@@ -504,6 +542,34 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      inventory_items: {
+        Args: {
+          p_archived?: boolean;
+          p_category_ids?: string[];
+          p_descending?: boolean;
+          p_limit?: number;
+          p_location_ids?: string[];
+          p_offset?: number;
+          p_search?: string;
+          p_sort?: string;
+          p_uncategorized?: boolean;
+        };
+        Returns: {
+          archived_at: string;
+          category_id: string;
+          category_name: string;
+          has_sizes: boolean;
+          id: string;
+          last_updated: string;
+          levels: Json;
+          name: string;
+          photo_path: string;
+          sku: string;
+          total_count: number;
+          total_quantity: number;
+          variants: Json;
+        }[];
       };
       set_stock: {
         Args: {
@@ -569,7 +635,7 @@ export type Database = {
       };
     };
     Enums: {
-      app_role: "admin" | "staff" | "viewer";
+      app_role: "admin" | "editor" | "viewer";
       item_type: "standard" | "kit";
       stock_reason:
         | "initial_count"
@@ -697,7 +763,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "staff", "viewer"],
+      app_role: ["admin", "editor", "viewer"],
       item_type: ["standard", "kit"],
       stock_reason: [
         "initial_count",

@@ -6,7 +6,6 @@ const TABS = [
   { href: "/settings/categories", label: "Categories" },
   { href: "/settings/locations", label: "Locations" },
   { href: "/settings/sizes", label: "Sizes" },
-  { href: "/settings/users", label: "Users" },
 ];
 
 export default async function SettingsLayout({ children }: LayoutProps<"/settings">) {
@@ -23,7 +22,7 @@ export default async function SettingsLayout({ children }: LayoutProps<"/setting
 
   return (
     <>
-      <PageHeader title="Settings" description="Manage the lists used across the inventory, and who has access." />
+      <PageHeader title="Settings" description="Manage the lists used across the inventory." />
       <NavTabs tabs={TABS} />
       <div className="mt-6">{children}</div>
     </>

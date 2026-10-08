@@ -6,7 +6,8 @@ Tailwind CSS and Supabase (Postgres, Auth, Storage).
 - **Stock** is tracked per item, per size (when the item has sizes), per location,
   e.g. "Black Hoodie · M · Warehouse: 12".
 - **Every quantity change** is logged with who, when, old value, new value and a reason.
-- **Sign-in is invite-only.** There are three roles: `admin`, `staff` and `viewer`.
+- **Sign-in is invite-only** (Supabase Auth, email and password). There are three roles:
+  `admin`, `editor` and `viewer`, enforced by the database (row-level security), not just the UI.
 
 ---
 
@@ -105,10 +106,11 @@ migrations are added, run `npx supabase db push` again and only the new ones are
    2. `20261008000002_auth_and_rls.sql`
    3. `20261008000003_stock_functions.sql`
    4. `20261008000004_storage.sql`
+   5. `20261008000005_editor_role_and_inventory_views.sql`
 
    If you switch to the CLI later, first mark these as already applied so it doesn't try to
    run them again:
-   `npx supabase migration repair --status applied 20261008000001 20261008000002 20261008000003 20261008000004`
+   `npx supabase migration repair --status applied 20261008000001 20261008000002 20261008000003 20261008000004 20261008000005`
 
 **Check it worked:** in **Table Editor** you should see `categories`, `items`,
 `item_variants`, `locations`, `sizes`, `stock_levels`, `stock_movements` and the other
@@ -118,7 +120,7 @@ bucket called `item-photos`.
 ### 6. Create the first admin
 
 **The first user created becomes an admin automatically.** Everyone after that starts as
-`staff`.
+`editor`.
 
 1. Go to **Authentication → Users → Add user**.
 2. Choose one:
@@ -139,19 +141,18 @@ npm run dev
 
 Open <http://localhost:3000> and sign in. The dashboard should show 0 items and 6 sizes.
 
-### Inviting more people and changing roles
+### Inviting people and changing roles
 
-Everything is done in the app under **Settings → Users** (admins only):
+Admins do this on the **Team** page:
 
-- **Change a role:** pick Admin, Staff or Viewer and click **Update**. The last admin can't
-  be demoted.
-- **Invite someone:** this needs the optional secret key. In Supabase go to **Project
-  Settings → API Keys**, copy the **Secret key** (`sb_secret_...`), and add it as
-  `SUPABASE_SECRET_KEY` (in `.env.local`, or in Vercel's environment variables). Treat it
-  like a password. Without it, invite people from Supabase under **Authentication → Users →
-  Add user → Send invitation**; they show up in the app as Staff.
-- Invitation emails only work after you've done step 4 (the email templates and the
-  Site URL).
+- **Invite:** enter an email, pick a role and click **Send invite**. They get an email, set a
+  password and they're in. People who haven't accepted yet are marked, with **Resend invite**.
+- **Change a role** or **Remove** someone. The last admin can't be demoted, and nobody can
+  remove themselves. A removed person's past changes stay in the history.
+- Inviting and removing need the **secret key**: in Supabase go to **Project Settings → API
+  Keys**, copy the **Secret key** (`sb_secret_...`), and add it as `SUPABASE_SECRET_KEY` (in
+  Vercel: **Environment Variables**, type **Secret**, then redeploy). Treat it like a password.
+- Invitation emails only work after step 4 (the email templates and the Site URL).
 
 ---
 
@@ -159,19 +160,30 @@ Everything is done in the app under **Settings → Users** (admins only):
 
 | Page | What you can do |
 |---|---|
-| **Dashboard** | Totals and the 10 most recent stock changes |
-| **Items** | Search by name or SKU, filter by category, see archived items. **Add item** creates one (with sizes for clothing). |
-| **Item page** | Photos (several per item, first one is the cover), the stock grid (sizes × locations), and the form to **Add**, **Remove**, **Set count** or **Transfer** stock with a reason. Click any number in the grid to pick that size and location. Add or remove sizes, edit details, archive or delete. |
+| **Inventory** (home) | Grid with photos or a table. Search by name or SKU, filter by category and location (pick several), sort by name, quantity, category or last updated. Each item shows its total; hover or tap it to see the breakdown by size and location. |
+| **Item page** | Photos (take one with the phone camera or choose files), a size × location grid where every number can be changed, the history log, and a form for changes with a specific reason or note. |
+| **Locations** | Every location with its item count and unit total. Open one to see everything stored there, with the same search and filters. **Move stock** moves units between locations. |
 | **History** | Every stock change, filterable by location, reason, person and date |
-| **Settings** (admins) | Categories, Locations, Sizes and Users: add, rename, reorder, archive, restore and delete |
+| **Team** (admins) | Invite people, change roles, remove people |
+| **Settings** (admins) | Categories, Locations and Sizes: add, rename, reorder, archive, restore and delete |
+
+**Changing quantities is instant:** tap **+** or **−**, or tap the number and type a new
+one. It saves on its own, with no Save button. Quick taps are grouped, so tapping + five
+times records one "+5". In the history, + is recorded as *Received*, − as *Issued* and a
+typed number as a *Count correction*. To record a different reason or add a note, use the
+form under the grid on the item page.
 
 What each role can do:
 
-| | Admin | Staff | Viewer |
+| | Admin | Editor | Viewer |
 |---|:-:|:-:|:-:|
 | See everything | ✓ | ✓ | ✓ |
-| Add/edit items, photos and stock | ✓ | ✓ | |
-| Settings (categories, locations, sizes, users) | ✓ | | |
+| Add/edit items, photos and quantities; move stock | ✓ | ✓ | |
+| Team (invite, roles, remove) | ✓ | | |
+| Settings (categories, locations, sizes) | ✓ | | |
+
+These rules are enforced in the database. Even someone calling the Supabase API directly
+can't do more than their role allows.
 
 Deleting is blocked when something is still in use, e.g. a category that has items, a
 location that holds stock, or an item with stock history. Use **Archive** instead: it hides
@@ -201,16 +213,18 @@ any browser or phone.
 
 | Table | Purpose |
 |---|---|
-| `profiles` | One row per user: name, email, role (`admin` / `staff` / `viewer`) |
+| `profiles` | One row per user: name, email, role (`admin` / `editor` / `viewer`) |
 | `categories` | Editable list. `default_has_sizes` pre-ticks "has sizes" for new items (e.g. Apparel). |
 | `locations` | Editable list: name, address, description |
 | `sizes` | Master size list: XS–XXL plus any custom sizes, with a sort order |
 | `items` | Name, description, category, SKU, notes, `has_sizes`, timestamps, who created/updated it |
 | `item_variants` | What stock is counted against. Sized items get one variant per size; unsized items get one default variant (created automatically). |
-| `item_photos` | Multiple photos per item, stored in the private `item-photos` bucket |
+| `item_photos` | Multiple photos per item (plus a small thumbnail each), stored in the private `item-photos` bucket |
 | `stock_levels` | Current quantity per variant per location (can never go below 0) |
 | `stock_movements` | Permanent history: who, when, old value, new value, change, reason, note |
 | `inventory_levels` (view) | `stock_levels` joined with item, size, category and location names |
+| `location_summaries` (view) | Item count and unit total per location |
+| `inventory_items()` (function) | Search, filter and sort for the inventory page |
 
 ### Changing stock
 
@@ -247,7 +261,7 @@ Reasons: `initial_count`, `received`, `issued`, `returned`, `count_correction`, 
 - Items and sizes that have stock history can't be deleted either. Archive them instead.
 - An item can only be switched between sized and unsized before any stock has been
   recorded against it.
-- Admins manage categories, locations and sizes. Admins and staff edit items, photos and
+- Admins manage categories, locations and sizes. Admins and editors edit items, photos and
   stock. Viewers can only read. Signed-out visitors can't see anything.
 
 ### Room for future features
@@ -269,11 +283,16 @@ Nothing for these is built yet. The schema already leaves room for each:
 ```
 src/
   app/
-    (app)/            signed-in area: dashboard, items, history, settings, account
+    (app)/            signed-in area: items (inventory), locations, history, team, settings
     auth/confirm/     handles invite & password-reset email links
     login/            sign-in page and auth server actions
+  components/
+    inventory/        inventory grid/table, filters, +/− quantity control, breakdown
+    photos/           photo gallery and camera/file upload buttons
   lib/
     auth.ts           current user/role helpers used by pages and actions
+    inventory.ts      loads the inventory page (calls inventory_items())
+    upload-photos.ts  compresses photos in the browser and uploads them
     supabase/
       client.ts       Supabase client for Client Components
       server.ts       Supabase client for Server Components / Actions / Route Handlers

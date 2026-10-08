@@ -22,7 +22,7 @@ export default async function NewItemPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title="Add item" description="You can add photos and record stock on the next page." />
+      <PageHeader title="Add item" description="Add photos now or later. You’ll set quantities on the next page." />
       <ItemForm categories={categories.data} sizes={sizes.data} />
     </div>
   );

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionForm, SubmitButton } from "@/components/action-form";
+import { PhotoManager } from "@/components/photos/photo-manager";
 import { Badge, Card, CardHeader, EmptyState, LinkButton, PageHeader, Table } from "@/components/ui";
 import { canEdit as canEditRole, getCurrentProfile } from "@/lib/auth";
 import { formatDateTime, REASON_LABELS } from "@/lib/format";
@@ -9,7 +10,6 @@ import { getPhotoUrls } from "@/lib/photos";
 import { QuantityChange } from "@/components/quantity-change";
 import { createClient } from "@/lib/supabase/server";
 import { addItemSizes, deleteItem, removeItemSize, restoreItemSize, setItemArchived } from "../actions";
-import { PhotoManager } from "./photo-manager";
 import { StockPanel } from "./stock-panel";
 
 export const metadata: Metadata = { title: "Item" };
@@ -23,7 +23,7 @@ export default async function ItemPage({ params }: PageProps<"/items/[id]">) {
   const { data: item, error } = await supabase
     .from("items")
     .select(
-      "id, name, sku, description, notes, has_sizes, archived_at, created_at, updated_at, categories(id, name), item_photos(id, storage_path, sort_order), item_variants(id, sku, archived_at, sizes(id, label, sort_order), stock_levels(location_id, quantity))",
+      "id, name, sku, description, notes, has_sizes, archived_at, created_at, updated_at, categories(id, name), item_photos(id, storage_path, thumbnail_path, sort_order), item_variants(id, sku, archived_at, sizes(id, label, sort_order), stock_levels(location_id, quantity))",
     )
     .eq("id", id)
     .order("sort_order", { referencedTable: "item_photos" })
@@ -69,7 +69,7 @@ export default async function ItemPage({ params }: PageProps<"/items/[id]">) {
     <div className="space-y-6">
       <div className="text-sm">
         <Link href="/items" className="text-brand-500 hover:underline">
-          ← Items
+          ← Inventory
         </Link>
       </div>
 
@@ -90,7 +90,10 @@ export default async function ItemPage({ params }: PageProps<"/items/[id]">) {
           canEdit && (
             <>
               <LinkButton href={`/items/${item.id}/edit`} variant="secondary">
-                Edit details
+                Edit
+              </LinkButton>
+              <LinkButton href={`/locations/move?item=${item.id}`} variant="secondary">
+                Move stock
               </LinkButton>
               <ActionForm action={setItemArchived} className="flex flex-col gap-2">
                 <input type="hidden" name="id" value={item.id} />

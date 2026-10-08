@@ -17,7 +17,7 @@ export const REASON_LABELS: Record<StockReason, string> = {
 
 export const ROLE_LABELS = {
   admin: "Admin",
-  staff: "Staff",
+  editor: "Editor",
   viewer: "Viewer",
 } as const;
 

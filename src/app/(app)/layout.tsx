@@ -11,11 +11,11 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
     <>
       <header className="bg-brand text-cream">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-          <Link href="/" className="flex items-center gap-3">
+          <Link href="/items" className="flex items-center gap-3">
             <Image src="/logo-mark-cream.png" alt="" width={36} height={36} priority />
             <span className="font-display text-sm font-semibold uppercase tracking-[0.2em]">
               Qalam Seminary
-              <span className="ml-2 font-medium normal-case tracking-normal text-brand-200">
+              <span className="ml-2 hidden font-medium normal-case tracking-normal text-brand-200 min-[420px]:inline">
                 Inventory
               </span>
             </span>
@@ -33,10 +33,15 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
 async function HeaderNav() {
   const profile = await getCurrentProfile();
   const links = [
-    { href: "/", label: "Dashboard" },
-    { href: "/items", label: "Items" },
+    { href: "/items", label: "Inventory" },
+    { href: "/locations", label: "Locations" },
     { href: "/history", label: "History" },
-    ...(isAdmin(profile.role) ? [{ href: "/settings", label: "Settings" }] : []),
+    ...(isAdmin(profile.role)
+      ? [
+          { href: "/team", label: "Team" },
+          { href: "/settings", label: "Settings" },
+        ]
+      : []),
   ];
 
   return (
