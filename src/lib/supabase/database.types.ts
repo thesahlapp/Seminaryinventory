@@ -1441,6 +1441,7 @@ export type Database = {
         };
       };
       dashboard_summary: { Args: Record<PropertyKey, never>; Returns: Json };
+      import_stock_levels: { Args: { p_changes: Json; p_note?: string }; Returns: number };
       inventory_items: {
         Args: {
           p_archived?: boolean;

@@ -4,6 +4,10 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    // CSV imports send up to 5,000 rows to the server (Vercel's limit is 4.5 MB).
+    serverActions: { bodySizeLimit: "4mb" },
+  },
   async headers() {
     return [
       {
