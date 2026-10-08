@@ -70,7 +70,7 @@ function CategoryFields({
           type="checkbox"
           name="default_has_sizes"
           defaultChecked={category?.default_has_sizes}
-          className="size-4 accent-brand"
+          className="size-4 accent-[#2f6b47]"
         />
         Items have sizes
       </label>

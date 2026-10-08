@@ -18,7 +18,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
           priority
           className="mx-auto h-auto w-56"
         />
-        <h1 className="mt-6 text-center font-display text-xl font-semibold tracking-wide text-brand">
+        <h1 className="mt-6 text-center font-display text-xl font-semibold tracking-wide text-brand-700">
           Inventory
         </h1>
 

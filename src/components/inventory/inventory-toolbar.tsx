@@ -134,7 +134,7 @@ export function InventoryToolbar({
           aria-pressed={state.archived}
           onClick={() => go({ archived: !state.archived })}
           className={`inline-flex h-9 items-center rounded-lg border px-3 text-sm ${
-            state.archived ? "border-brand bg-brand-50 text-brand" : "border-cream-400 bg-cream-50 text-brand-700 hover:bg-cream-100"
+            state.archived ? "border-brand bg-brand-50 text-brand-700" : "border-cream-400 bg-cream-50 text-brand-700 hover:bg-cream-100"
           }`}
         >
           Archived
@@ -213,7 +213,7 @@ function MultiSelect({
           }
         }}
         className={`inline-flex h-9 max-w-56 items-center gap-1 rounded-lg border px-3 text-sm ${
-          selected.length ? "border-brand bg-brand-50 text-brand" : "border-cream-400 bg-cream-50 text-brand-700 hover:bg-cream-100"
+          selected.length ? "border-brand bg-brand-50 text-brand-700" : "border-cream-400 bg-cream-50 text-brand-700 hover:bg-cream-100"
         }`}
       >
         <span className="text-brand-400">{label}</span>
@@ -231,7 +231,7 @@ function MultiSelect({
               >
                 <input
                   type="checkbox"
-                  className="size-4 accent-brand"
+                  className="size-4 accent-[#2f6b47]"
                   checked={draft.includes(option.id)}
                   onChange={(e) =>
                     setDraft(e.target.checked ? [...draft, option.id] : draft.filter((id) => id !== option.id))

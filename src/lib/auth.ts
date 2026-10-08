@@ -18,7 +18,7 @@ export const getCurrentProfile = cache(async () => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, full_name, email, role")
+    .select("id, full_name, email, role, theme, email_low_stock, email_overdue, email_mentions")
     .eq("id", userId)
     .single();
   if (!profile) redirect("/login");

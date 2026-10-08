@@ -223,7 +223,7 @@ export function StockPanel({
                 onClick={() => chooseMode(m.value)}
                 disabled={m.value === "transfer" && locations.length < 2}
                 className={`flex-1 whitespace-nowrap rounded-md px-2 py-1.5 text-sm font-medium transition disabled:opacity-40 ${
-                  mode === m.value ? "bg-cream-50 text-brand shadow-sm" : "text-brand-600 hover:text-brand"
+                  mode === m.value ? "bg-cream-50 text-brand-700 shadow-sm" : "text-brand-600 hover:text-brand-700"
                 }`}
               >
                 {m.label}

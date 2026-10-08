@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "Set your password" };
 export default function SetPasswordPage({ searchParams }: PageProps<"/account/password">) {
   return (
     <div className="mx-auto max-w-sm">
-      <h1 className="font-display text-2xl font-semibold text-brand">Set your password</h1>
+      <h1 className="font-display text-2xl font-semibold text-brand-700">Set your password</h1>
       <p className="mt-2 text-sm text-brand-500">
         Choose a password you&apos;ll use to sign in from now on.
       </p>

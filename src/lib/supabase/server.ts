@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import type { Database } from "./database.types";
 import { getSupabaseEnv } from "./env";
 
@@ -10,6 +11,9 @@ import { getSupabaseEnv } from "./env";
 export async function createClient() {
   const { url, key } = getSupabaseEnv();
   const cookieStore = await cookies();
+  // Supabase reads the clock while restoring the session, which Next.js only
+  // allows once a page is rendering for a real request (not prebuilt).
+  await connection();
 
   return createServerClient<Database>(url, key, {
     cookies: {

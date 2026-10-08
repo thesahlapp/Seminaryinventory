@@ -1,9 +1,19 @@
 @import "tailwindcss";
 
+/* `dark:` utilities follow the class on <html> (set from the user's setting). */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /*
  * Qalam Seminary palette
  *   brand  - Pantone 553 C green (#284734) and tints/shades
  *   cream  - warm paper background
+ *
+ * Components use these tokens everywhere. Dark mode (below) swaps the token
+ * values, so every page follows without per-component changes:
+ *   cream-50…400  surfaces and borders   (light paper  -> dark green-black)
+ *   brand-50…900  text and accents       (dark green   -> light green)
+ *   brand         filled buttons/header  (stays a deep green in both)
+ *   cream         text on filled green   (stays cream in both)
  */
 @theme {
   --color-brand-50: #eef3ef;
@@ -25,13 +35,95 @@
   --color-cream-300: #e9e0c8;
   --color-cream-400: #d8cba8;
 
+  --color-page: #f5f0e1;
   --color-ink: #1c2420;
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
 }
 
+:root {
+  color-scheme: light;
+}
+
+:root.dark {
+  color-scheme: dark;
+
+  --color-brand-50: #1b3024;
+  --color-brand-100: #22402e;
+  --color-brand-200: #3a5c46;
+  --color-brand-300: #7d9c86;
+  --color-brand-400: #94b09b;
+  --color-brand-500: #adc4b2;
+  --color-brand-600: #c3d5c7;
+  --color-brand-700: #d6e4d9;
+  --color-brand-800: #e5eee7;
+  --color-brand-900: #f2f7f3;
+  --color-brand: #2d5a3e;
+
+  --color-cream-50: #19211c;
+  --color-cream-100: #1e2822;
+  --color-cream-200: #243029;
+  --color-cream-300: #304037;
+  --color-cream-400: #43554a;
+
+  --color-page: #111814;
+  --color-ink: #e8eee9;
+
+  /* Status colours: dark backgrounds, light text */
+  --color-red-50: #3b1c1c;
+  --color-red-100: #4a2222;
+  --color-red-200: #6e2d2d;
+  --color-red-300: #8f3b3b;
+  --color-red-600: #f19a9a;
+  --color-red-700: #f4aaaa;
+  --color-red-800: #f7c0c0;
+  --color-red-900: #fbd5d5;
+  --color-amber-50: #33270f;
+  --color-amber-100: #3d2f12;
+  --color-amber-200: #5c4719;
+  --color-amber-700: #f0c674;
+  --color-amber-800: #f3cf88;
+  --color-amber-900: #f6dba1;
+}
+
+/* Anything printed (labels, reports) and areas marked .force-light always use
+   the light palette. */
+.force-light {
+  color-scheme: light;
+  --color-brand-50: #eef3ef;
+  --color-brand-100: #d5e1d8;
+  --color-brand-200: #aec4b4;
+  --color-brand-300: #7f9f88;
+  --color-brand-400: #557a60;
+  --color-brand-500: #3a5e46;
+  --color-brand-600: #2f523c;
+  --color-brand-700: #284734;
+  --color-brand-800: #1f3829;
+  --color-brand-900: #16281d;
+  --color-brand: #284734;
+  --color-cream-50: #fdfbf6;
+  --color-cream-100: #f9f5eb;
+  --color-cream-200: #f5f0e1;
+  --color-cream-300: #e9e0c8;
+  --color-cream-400: #d8cba8;
+  --color-page: #ffffff;
+  --color-ink: #1c2420;
+  background: #ffffff;
+  color: #1c2420;
+}
+
 body {
-  background-color: var(--color-cream);
+  background-color: var(--color-page);
   color: var(--color-ink);
+}
+
+@media print {
+  :root.dark {
+    color-scheme: light;
+  }
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
 }

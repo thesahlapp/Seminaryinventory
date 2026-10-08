@@ -52,3 +52,8 @@ export function formText(formData: FormData, name: string) {
 export function sanitizeSearch(value: string) {
   return value.replace(/[,()*%\\:"]/g, " ").trim();
 }
+
+/** Today's date (YYYY-MM-DD) in Dallas, for due dates. */
+export function todayInDallas() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE }).format(new Date());
+}

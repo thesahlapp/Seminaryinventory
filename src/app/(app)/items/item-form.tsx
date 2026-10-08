@@ -142,7 +142,7 @@ export function ItemForm({
                 setHasSizes(e.target.checked);
                 setSizesTouched(true);
               }}
-              className="size-4 accent-brand"
+              className="size-4 accent-[#2f6b47]"
             />
             This item comes in sizes
           </label>
@@ -177,7 +177,7 @@ export function ItemForm({
                       name="size_ids"
                       value={size.id}
                       defaultChecked={size.is_standard}
-                      className="accent-brand"
+                      className="accent-[#2f6b47]"
                     />
                     {size.label}
                   </label>

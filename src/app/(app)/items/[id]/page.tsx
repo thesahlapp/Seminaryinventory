@@ -184,7 +184,7 @@ export default async function ItemPage({ params }: PageProps<"/items/[id]">) {
                         key={s.id}
                         className="flex cursor-pointer items-center gap-1.5 rounded-md border border-cream-400 bg-cream-50 px-2.5 py-1 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand-50"
                       >
-                        <input type="checkbox" name="size_ids" value={s.id} className="accent-brand" />
+                        <input type="checkbox" name="size_ids" value={s.id} className="accent-[#2f6b47]" />
                         {s.label}
                       </label>
                     ))}

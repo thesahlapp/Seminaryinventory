@@ -97,7 +97,7 @@ export function Card({ className = "", ...props }: ComponentProps<"section">) {
 export function CardHeader({ title, actions }: { title: ReactNode; actions?: ReactNode }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-cream-300 px-5 py-3">
-      <h2 className="font-display text-base font-semibold text-brand">{title}</h2>
+      <h2 className="font-display text-base font-semibold text-brand-700">{title}</h2>
       {actions}
     </div>
   );
@@ -115,7 +115,7 @@ export function PageHeader({
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="font-display text-2xl font-semibold text-brand">{title}</h1>
+        <h1 className="font-display text-2xl font-semibold text-brand-700">{title}</h1>
         {description && <p className="mt-1 text-sm text-brand-500">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
@@ -127,7 +127,7 @@ export function Badge({
   tone = "neutral",
   children,
 }: {
-  tone?: "neutral" | "brand" | "muted" | "warning";
+  tone?: "neutral" | "brand" | "muted" | "warning" | "danger";
   children: ReactNode;
 }) {
   const tones = {
@@ -135,6 +135,7 @@ export function Badge({
     brand: "bg-brand-100 text-brand-800",
     muted: "bg-cream-200 text-brand-400 ring-1 ring-cream-400",
     warning: "bg-amber-100 text-amber-900",
+    danger: "bg-red-100 text-red-800",
   };
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tones[tone]}`}>

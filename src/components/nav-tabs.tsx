@@ -17,7 +17,7 @@ export function NavTabs({ tabs }: { tabs: { href: string; label: string }[] }) {
             aria-current={active ? "page" : undefined}
             className={`-mb-px whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium ${
               active
-                ? "border-brand text-brand"
+                ? "border-brand text-brand-700"
                 : "border-transparent text-brand-400 hover:border-cream-400 hover:text-brand-700"
             }`}
           >

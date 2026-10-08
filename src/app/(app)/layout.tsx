@@ -1,71 +1,41 @@
-import Image from "next/image";
-import Link from "next/link";
 import { Suspense } from "react";
-import { signOut } from "@/app/login/actions";
-import { NavLinks } from "@/components/nav-links";
-import { getCurrentProfile, isAdmin } from "@/lib/auth";
+import { AppNav } from "@/components/app-nav";
+import { OfflineBanner } from "@/components/offline-banner";
+import { ThemeSync } from "@/components/theme";
+import { getCurrentProfile } from "@/lib/auth";
 import { ROLE_LABELS } from "@/lib/format";
+import { navLinksFor } from "@/lib/navigation";
+import { createClient } from "@/lib/supabase/server";
 
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <>
-      <header className="bg-brand text-cream">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-          <Link href="/items" className="flex items-center gap-3">
-            <Image src="/logo-mark-cream.png" alt="" width={36} height={36} priority />
-            <span className="font-display text-sm font-semibold uppercase tracking-[0.2em]">
-              Qalam Seminary
-              <span className="ml-2 hidden font-medium normal-case tracking-normal text-brand-200 min-[420px]:inline">
-                Inventory
-              </span>
-            </span>
-          </Link>
-          <Suspense>
-            <HeaderNav />
-          </Suspense>
-        </div>
-      </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+      <Suspense fallback={<div className="h-14 bg-brand pt-[env(safe-area-inset-top)] box-content print:hidden" />}>
+        <Navigation />
+      </Suspense>
+      <OfflineBanner />
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-6 lg:pb-10 print:p-0">{children}</main>
     </>
   );
 }
 
-async function HeaderNav() {
+async function Navigation() {
   const profile = await getCurrentProfile();
-  const links = [
-    { href: "/items", label: "Inventory" },
-    { href: "/locations", label: "Locations" },
-    { href: "/history", label: "History" },
-    ...(isAdmin(profile.role)
-      ? [
-          { href: "/team", label: "Team" },
-          { href: "/settings", label: "Settings" },
-        ]
-      : []),
-  ];
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .is("read_at", null);
 
   return (
     <>
-      <div className="order-last w-full sm:order-none sm:w-auto">
-        <NavLinks links={links} />
-      </div>
-      <div className="ml-auto flex items-center gap-3 text-sm">
-        <Link
-          href="/account/password"
-          className="hidden text-brand-100 hover:text-cream sm:inline"
-          title="My account"
-        >
-          {profile.full_name ?? profile.email}
-          <span className="ml-2 rounded-full bg-brand-600 px-2 py-0.5 text-xs">
-            {ROLE_LABELS[profile.role]}
-          </span>
-        </Link>
-        <form action={signOut}>
-          <button className="rounded-md border border-brand-400 px-3 py-1 hover:bg-brand-600">
-            Sign out
-          </button>
-        </form>
-      </div>
+      <ThemeSync theme={profile.theme as "system" | "light" | "dark"} />
+      <AppNav
+        links={navLinksFor(profile.role)}
+        userName={profile.full_name ?? profile.email ?? "Account"}
+        roleLabel={ROLE_LABELS[profile.role]}
+        unreadCount={count ?? 0}
+      />
     </>
   );
 }

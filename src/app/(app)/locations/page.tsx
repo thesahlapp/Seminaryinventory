@@ -59,7 +59,7 @@ export default async function LocationsPage() {
                 className="flex h-full flex-col rounded-xl border border-cream-300 bg-cream-50 p-5 shadow-sm transition hover:border-brand-300"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <h2 className="font-display text-lg font-semibold text-brand">{location.name}</h2>
+                  <h2 className="font-display text-lg font-semibold text-brand-700">{location.name}</h2>
                   {location.archived_at && <Badge tone="muted">Archived</Badge>}
                 </div>
                 {(location.address || location.description) && (
@@ -70,13 +70,13 @@ export default async function LocationsPage() {
                 <dl className="mt-auto flex gap-6 pt-4">
                   <div>
                     <dt className="text-xs uppercase tracking-wide text-brand-400">Items</dt>
-                    <dd className="font-display text-2xl font-semibold tabular-nums text-brand">
+                    <dd className="font-display text-2xl font-semibold tabular-nums text-brand-700">
                       {Number(location.item_count).toLocaleString()}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-xs uppercase tracking-wide text-brand-400">Units</dt>
-                    <dd className="font-display text-2xl font-semibold tabular-nums text-brand">
+                    <dd className="font-display text-2xl font-semibold tabular-nums text-brand-700">
                       {Number(location.total_units).toLocaleString()}
                     </dd>
                   </div>

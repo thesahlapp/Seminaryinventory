@@ -4,7 +4,7 @@ import type { Database } from "./database.types";
 import { getSupabaseEnv } from "./env";
 
 // Pages that signed-out visitors may open.
-const PUBLIC_PATHS = ["/login", "/auth"];
+const PUBLIC_PATHS = ["/login", "/auth", "/offline", "/api/cron"];
 
 /** Refreshes the auth session cookie and sends signed-out visitors to /login. */
 export async function updateSession(request: NextRequest) {

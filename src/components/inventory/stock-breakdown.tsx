@@ -159,7 +159,7 @@ function BreakdownPopover({
         createPortal(
           <>
             {/* Dim background on phones */}
-            <div className="fixed inset-0 z-40 bg-ink/30 sm:hidden" aria-hidden onClick={close} />
+            <div className="fixed inset-0 z-40 bg-black/40 sm:hidden" aria-hidden onClick={close} />
             <div
               ref={panelRef}
               role="dialog"
@@ -171,7 +171,7 @@ function BreakdownPopover({
             >
               <div className="sticky top-0 flex items-center justify-between gap-2 border-b border-cream-300 bg-cream-50 px-4 py-3">
                 <div className="min-w-0">
-                  <p className="truncate font-display text-sm font-semibold text-brand">{item.name}</p>
+                  <p className="truncate font-display text-sm font-semibold text-brand-700">{item.name}</p>
                   <p className="text-xs text-brand-500">Total {item.totalQuantity.toLocaleString()}</p>
                 </div>
                 <div className="flex items-center gap-1">
