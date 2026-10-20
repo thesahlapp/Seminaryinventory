@@ -38,14 +38,23 @@ jobs:
 
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # A fixed version: "latest" asks GitHub's API each run and can hit its rate limit.
+          version: 2.120.0
 
       - name: Dump database
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           mkdir backup
-          supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/roles.sql --role-only
+          if ! supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/roles.sql --role-only > dump-error.log 2>&1; then
+            cat dump-error.log
+            if grep -q "password authentication failed" dump-error.log; then
+              echo "::error::The database password in the SUPABASE_DB_URL secret is wrong. Reset it in Supabase (Connect → Reset database password, letters and numbers only), put it into the connection string and update the secret. See docs/BACKUPS.md."
+            elif grep -qi "could not translate host name\|Network is unreachable" dump-error.log; then
+              echo "::error::Couldn't reach the database. Use the Session pooler connection string (it contains pooler.supabase.com), not Direct connection."
+            fi
+            exit 1
+          fi
           supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/schema.sql
           supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/data.sql --use-copy --data-only \
             -x "storage.buckets_vectors" -x "storage.vector_indexes"
